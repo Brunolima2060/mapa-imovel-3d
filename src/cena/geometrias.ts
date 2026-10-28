@@ -1,7 +1,7 @@
 // Geometrias da maquete (Three.js): disco de terreno com textura do mapa, saia lateral, prédios em um único
 // buffer, arco até um ponto. Tudo em metros, x leste, y cima, z sul.
 
-import { BufferAttribute, BufferGeometry, CanvasTexture, Color, LinearMipmapLinearFilter, SRGBColorSpace, ShapeUtils, Vector2 } from "three";
+import { BufferAttribute, BufferGeometry, CanvasTexture, Color, LinearMipmapLinearFilter, RepeatWrapping, SRGBColorSpace, ShapeUtils, Vector2 } from "three";
 import { alturaEm, type DadosCidade, type XZ } from "../cidade.ts";
 import { ESTILO } from "./estilo.ts";
 
@@ -114,6 +114,7 @@ export const geometriaPredios = (d: DadosCidade): BufferGeometry => {
   const R = raioDisco(d) - 25;
   const pos: number[] = [];
   const cor: number[] = [];
+  const uv: number[] = [];
   const c1 = new Color(ESTILO.predio), c2 = new Color(ESTILO.predioReserva);
   let s = 7;
   const rnd = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
@@ -128,20 +129,28 @@ export const geometriaPredios = (d: DadosCidade): BufferGeometry => {
     let area = 0;
     for (let i = 0; i < n; i++) { const [x1, z1] = p.p[i], [x2, z2] = p.p[(i + 1) % n]; area += x1 * z2 - x2 * z1; }
     const pts = area > 0 ? p.p : [...p.p].reverse();
+    // fachada: u anda 1 por janela (3,2 m) no perímetro, v 1 por andar (3,1 m); base mais escura (sombra de contato)
+    let u = 0;
+    const v0 = 0, v1 = (topo - base) / 3.1;
     for (let i = 0; i < n; i++) {
       const [x1, z1] = pts[i], [x2, z2] = pts[(i + 1) % n];
+      const ua = u, ub = u + Math.hypot(x2 - x1, z2 - z1) / 3.2;
+      u = ub;
       pos.push(x1, base, z1, x1, topo, z1, x2, base, z2, x2, base, z2, x1, topo, z1, x2, topo, z2);
-      for (let k = 0; k < 6; k++) cor.push(c.r * 0.97, c.g * 0.97, c.b * 0.97);
+      uv.push(ua, v0, ua, v1, ub, v0, ub, v0, ua, v1, ub, v1);
+      const emBaixo = [1, 0, 1, 1, 0, 0];
+      for (const b of emBaixo) { const k = b ? 0.74 : 0.98; cor.push(c.r * k, c.g * k, c.b * k); }
     }
     const tri = ShapeUtils.triangulateShape(pts.map(([x, z]) => new Vector2(x, z)), []);
     for (const [a, b, e] of tri) {
-      for (const k of [a, e, b]) pos.push(pts[k][0], topo, pts[k][1]);
+      for (const k of [a, e, b]) { pos.push(pts[k][0], topo, pts[k][1]); uv.push(0.04, 0.04); } // telhado: canto liso da textura
       for (let k = 0; k < 3; k++) cor.push(c.r, c.g, c.b);
     }
   }
   const g = new BufferGeometry();
   g.setAttribute("position", new BufferAttribute(new Float32Array(pos), 3));
   g.setAttribute("color", new BufferAttribute(new Float32Array(cor), 3));
+  g.setAttribute("uv", new BufferAttribute(new Float32Array(uv), 2));
   g.computeVertexNormals();
   return g;
 };
@@ -158,4 +167,26 @@ export const pontosArco = (de: [number, number, number], ate: [number, number, n
     const b = Math.sin(Math.PI * t);
     return [de[0] + (ate[0] - de[0]) * t + nx * lado * b, de[1] + (ate[1] - de[1]) * t + b * pico, de[2] + (ate[2] - de[2]) * t + nz * lado * b] as [number, number, number];
   });
+};
+
+// Textura das fachadas: 1 janela por quadrado (u = 3,2 m, v = 3,1 m). Fundo branco (a cor vem do prédio),
+// vidro cinza-azulado discreto. O canto (0,04; 0,04) é liso: é dele que o telhado tira a cor.
+export const texturaJanelas = (): CanvasTexture => {
+  const cv = document.createElement("canvas");
+  cv.width = cv.height = 64;
+  const g = cv.getContext("2d")!;
+  g.fillStyle = "#FFFFFF";
+  g.fillRect(0, 0, 64, 64);
+  g.fillStyle = "#8FA0A6";
+  g.fillRect(12, 14, 40, 30);
+  g.fillStyle = "#A9B8BC";
+  g.fillRect(12, 14, 40, 9);
+  g.fillStyle = "#E6E2DA";
+  g.fillRect(10, 44, 44, 3);
+  const t = new CanvasTexture(cv);
+  t.colorSpace = SRGBColorSpace;
+  t.wrapS = t.wrapT = RepeatWrapping;
+  t.anisotropy = 4;
+  t.minFilter = LinearMipmapLinearFilter;
+  return t;
 };

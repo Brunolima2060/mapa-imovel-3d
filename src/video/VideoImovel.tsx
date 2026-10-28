@@ -63,6 +63,7 @@ const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura
           raioAproxM={ficha.raioAproxM}
           marcadores={marcadores}
           pulso={(f % fps) / fps}
+          tempo={f / fps}
         />
       </AbsoluteFill>
 

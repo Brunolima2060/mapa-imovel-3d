@@ -55,7 +55,7 @@ export const GuiaChegada: React.FC<PropsGuia> = (p) => {
   const km = p.metros ? `${(p.metros / 1000).toFixed(1).replace(".", ",")} km` : "";
   return (
     <AbsoluteFill style={{ background: `linear-gradient(180deg, ${ESTILO.ceuTopo} 0%, ${ESTILO.ceuBase} 62%)`, fontFamily: FONTE }}>
-      <Cidade3D dados={dados} largura={width} altura={height} quadro={q} cor={p.marca.cor} aproximada={false} raioAproxM={0} marcadores={[]} pulso={(f % 30) / 30} rota={{ pts, progresso: t }} />
+      <Cidade3D dados={dados} largura={width} altura={height} quadro={q} cor={p.marca.cor} aproximada={false} raioAproxM={0} marcadores={[]} pulso={(f % 30) / 30} tempo={f / 30} rota={{ pts, progresso: t }} />
       <div style={{ position: "absolute", top: (vertical ? 200 : 60) * s, left: 0, right: 0, textAlign: "center", opacity: entrada(f, 4) }}>
         <span style={{ background: "rgba(250,247,241,0.9)", padding: `${12 * s}px ${30 * s}px`, borderRadius: 999, fontSize: 34 * s, fontWeight: 700, color: ESTILO.texto }}>Como chegar · {p.nome}</span>
       </div>

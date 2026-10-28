@@ -2,7 +2,7 @@
 
 export type XZ = [number, number];
 export type Predio = { p: XZ[]; h: number; b: number; r?: 1 }; // h altura, b base (chão), r=1 volume de reserva
-export type Rua = { p: XZ[]; tipo: "principal" | "local" };
+export type Rua = { p: XZ[]; tipo: "principal" | "local"; rodovia?: 1 };
 
 export type DadosCidade = {
   origem: { lat: number; lon: number };
@@ -13,6 +13,7 @@ export type DadosCidade = {
   agua: XZ[][];
   verde: XZ[][];
   areia: XZ[][];
+  arvores?: [number, number, number][]; // x, z, escala
   pontos: { id: string; x: number; z: number }[];
   imovel: { x: number; z: number };
   cobertura: number; // prédios reais por km²

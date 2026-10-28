@@ -47,7 +47,11 @@ const opcoesNavegador = async () => {
 };
 
 export const fecharNavegador = async () => {
-  if (navegador) await (await navegador).close({ silent: true });
+  try {
+    if (navegador) await (await navegador).close({ silent: true });
+  } catch {
+    // no Windows o encerramento às vezes é barrado; o Chrome fecha sozinho quando o processo termina
+  }
   navegador = null;
 };
 

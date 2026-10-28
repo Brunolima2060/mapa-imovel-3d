@@ -14,13 +14,13 @@ export const pontoNoPoligono = ([x, z]: XZ, pol: XZ[]): boolean => {
   return dentro;
 };
 
-const caixa = (pts: XZ[]) => {
+export const caixa = (pts: XZ[]) => {
   let x0 = Infinity, z0 = Infinity, x1 = -Infinity, z1 = -Infinity;
   for (const [x, z] of pts) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); z0 = Math.min(z0, z); z1 = Math.max(z1, z); }
   return { x0, z0, x1, z1 };
 };
 
-const distSegmento = ([px, pz]: XZ, [ax, az]: XZ, [bx, bz]: XZ) => {
+export const distSegmento = ([px, pz]: XZ, [ax, az]: XZ, [bx, bz]: XZ) => {
   const dx = bx - ax, dz = bz - az;
   const l2 = dx * dx + dz * dz || 1e-9;
   const t = Math.max(0, Math.min(1, ((px - ax) * dx + (pz - az) * dz) / l2));
@@ -28,7 +28,7 @@ const distSegmento = ([px, pz]: XZ, [ax, az]: XZ, [bx, bz]: XZ) => {
 };
 
 // Grade espacial simples para consultas de vizinhança.
-class Grade<T> {
+export class Grade<T> {
   private m = new Map<string, T[]>();
   private lado: number;
   constructor(lado: number) { this.lado = lado; }

@@ -8,6 +8,7 @@ import { buscar } from "./http.ts";
 import { aneisLatLon, baixarLadrilhos } from "./ladrilhos.ts";
 import { paraMetros, type LatLon } from "./geo.ts";
 import { gerarReserva } from "./reserva.ts";
+import { espalharArvores } from "./arvores.ts";
 import { alturaEm, type DadosCidade, type Predio, type Rua, type XZ } from "../../src/cidade.ts";
 
 
@@ -111,7 +112,11 @@ export const gerarCidade = async (origem: LatLon, pontos: { id: string; lat: num
           const cls = String(t.class);
           for (const a of aneis) {
             if (!a.xz.some(noQuadro)) continue;
-            if (PRINCIPAIS.test(cls)) { ruas.push({ p: a.xz, tipo: "principal" }); ruasReserva.push({ p: a.xz, tipo: "principal" }); }
+            if (PRINCIPAIS.test(cls)) {
+              const r: Rua = /^(motorway|trunk)$/.test(cls) ? { p: a.xz, tipo: "principal", rodovia: 1 } : { p: a.xz, tipo: "principal" };
+              ruas.push(r);
+              ruasReserva.push(r);
+            }
             else if (cls === "minor") { ruas.push({ p: a.xz, tipo: "local" }); ruasReserva.push({ p: a.xz, tipo: "local" }); }
             else if (cls === "service") ruas.push({ p: a.xz, tipo: "local" });
           }
@@ -138,9 +143,13 @@ export const gerarCidade = async (origem: LatLon, pontos: { id: string; lat: num
     predios.push(...extra);
     console.log(`  poucos prédios no mapa (${cobertura}/km²): +${extra.length} volumes de reserva`);
   }
+  console.log("  árvores...");
+  const arvores = espalharArvores({ verde, predios, agua, ruas, semente })
+    .filter(([x, z]) => alturaEm(relevo, x, z) >= 0.3);
   return {
     origem,
     raioM: RAIO_M,
+    arvores,
     relevo,
     predios,
     ruas,

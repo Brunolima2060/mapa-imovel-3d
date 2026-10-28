@@ -3,12 +3,14 @@ import { useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo } from "react";
 import { cancelRender } from "remotion";
 import {
-  CatmullRomCurve3, Color, CylinderGeometry, DoubleSide, Fog, PerspectiveCamera,
+  CatmullRomCurve3, Color, CylinderGeometry, DoubleSide, Fog, PerspectiveCamera, PMREMGenerator,
   RingGeometry, ShaderMaterial, TubeGeometry, Vector3, type DirectionalLight,
 } from "three";
 import type { DadosCidade } from "../cidade.ts";
 import { ESTILO } from "./estilo.ts";
-import { alturaTerreno, geometriaPredios, geometriaSaia, geometriaTerreno, pontosArco, raioDisco, texturaMapa } from "./geometrias.ts";
+import { alturaTerreno, geometriaPredios, geometriaSaia, geometriaTerreno, pontosArco, raioDisco, texturaJanelas, texturaMapa } from "./geometrias.ts";
+import { Arvores, Transito } from "./Vida.tsx";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import type { Quadro } from "./camera.ts";
 import { pontoNaMaquete } from "./camera.ts";
 
@@ -24,6 +26,24 @@ type Props = {
   raioAproxM: number;
   marcadores: MarcadorCena[];
   pulso: number; // 0..1, anima o destaque do imóvel
+  tempo?: number; // segundos desde o começo (trânsito andando)
+};
+
+// Mar e lagos com reflexo suave do céu (mapa de ambiente gerado uma vez, sem imagem externa).
+const Mar: React.FC<{ raio: number }> = ({ raio }) => {
+  const { gl } = useThree();
+  const env = useMemo(() => {
+    const pm = new PMREMGenerator(gl);
+    const t = pm.fromScene(new RoomEnvironment(), 0.04).texture;
+    pm.dispose();
+    return t;
+  }, [gl]);
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.2, 0]} receiveShadow>
+      <circleGeometry args={[raio, 180]} />
+      <meshStandardMaterial color={ESTILO.mar} roughness={0.32} metalness={0.02} envMap={env} envMapIntensity={0.25} transparent opacity={0.94} />
+    </mesh>
+  );
 };
 
 const Camera: React.FC<{ q: Quadro; aspecto: number }> = ({ q, aspecto }) => {
@@ -163,11 +183,12 @@ const Rota: React.FC<{ dados: DadosCidade; pts: [number, number][]; progresso: n
   );
 };
 
-export const Cidade3D: React.FC<Props & { rota?: { pts: [number, number][]; progresso: number } }> = ({ dados, largura, altura, quadro, cor, aproximada, raioAproxM, marcadores, pulso, rota }) => {
+export const Cidade3D: React.FC<Props & { rota?: { pts: [number, number][]; progresso: number } }> = ({ dados, largura, altura, quadro, cor, aproximada, raioAproxM, marcadores, pulso, rota, tempo = 0 }) => {
   const terreno = useMemo(() => geometriaTerreno(dados), [dados]);
   const textura = useMemo(() => texturaMapa(dados), [dados]);
   const saia = useMemo(() => geometriaSaia(dados), [dados]);
   const predios = useMemo(() => geometriaPredios(dados), [dados]);
+  const janelas = useMemo(() => texturaJanelas(), []);
   const temMar = useMemo(() => dados.relevo.y.some((v) => v < 0), [dados]);
   const R = raioDisco(dados);
   return (
@@ -193,14 +214,11 @@ export const Cidade3D: React.FC<Props & { rota?: { pts: [number, number][]; prog
       <mesh geometry={saia}>
         <meshStandardMaterial color={ESTILO.chaoBorda} roughness={1} side={DoubleSide} />
       </mesh>
-      {temMar && (
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.2, 0]} receiveShadow>
-          <circleGeometry args={[R - 2, 180]} />
-          <meshStandardMaterial color={ESTILO.mar} roughness={0.45} metalness={0} transparent opacity={0.92} />
-        </mesh>
-      )}
+      {temMar && <Mar raio={R - 2} />}
+      <Arvores dados={dados} />
+      <Transito dados={dados} tempo={tempo} />
       <mesh geometry={predios} castShadow>
-        <meshStandardMaterial vertexColors roughness={0.88} side={DoubleSide} />
+        <meshStandardMaterial vertexColors map={janelas} roughness={0.85} side={DoubleSide} />
       </mesh>
       <DestaqueImovel dados={dados} cor={cor} aproximada={aproximada} raio={raioAproxM} pulso={pulso} />
       {rota && rota.pts.length > 1 && <Rota dados={dados} pts={rota.pts} progresso={rota.progresso} cor={cor} />}
