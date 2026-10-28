@@ -13,7 +13,7 @@ import { Assinatura } from "./Interface.tsx";
 loadFont("normal", { weights: ["500", "700"], subsets: ["latin", "latin-ext"] });
 
 // Imagem de capa: maquete com todos os pontos do vídeo marcados + nome + os 3 pontos mais fortes.
-export const Capa: React.FC<{ ficha: FichaPublica }> = ({ ficha }) => {
+export const Capa: React.FC<{ ficha: FichaPublica; semCartao?: boolean }> = ({ ficha, semCartao }) => {
   const dados = useDadosCidade();
   const { width, height } = useVideoConfig();
   const vertical = height > width;
@@ -43,7 +43,7 @@ export const Capa: React.FC<{ ficha: FichaPublica }> = ({ ficha }) => {
         marcadores={pontos.map((p, i) => ({ id: p.id, x: xz[i].x, z: xz[i].z, ativo: 0, arco: 1 }))}
         pulso={0}
       />
-      <div
+      {!semCartao && <div
         style={{
           position: "absolute", background: ESTILO.cartao, borderRadius: 40 * s, padding: `${40 * s}px ${48 * s}px`, boxShadow: "0 20px 70px rgba(40,30,20,0.22)",
           ...(vertical ? { left: 60 * s, right: 60 * s, bottom: 260 * s } : { left: 70 * s, top: 120 * s, width: 700 * s }),
@@ -62,7 +62,7 @@ export const Capa: React.FC<{ ficha: FichaPublica }> = ({ ficha }) => {
             </div>
           ))}
         </div>
-      </div>
+      </div>}
       <Assinatura ficha={ficha} escala={s} vertical={vertical} />
     </AbsoluteFill>
   );

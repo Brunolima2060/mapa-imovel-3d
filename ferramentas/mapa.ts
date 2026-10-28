@@ -12,7 +12,9 @@ import { paginaGuia, paginaImovel, paginaPortfolio } from "./lib/interativo.ts";
 import { textosImovel } from "./lib/textos.ts";
 import { qrPng } from "./lib/qr.ts";
 import { galpaoHtml, plantaHtml } from "../src/planta/svg.ts";
-import { buscarPontosLogisticos } from "./lib/logistica.ts";
+import { aeroportoDeCarga, buscarCeasa, buscarPontosLogisticos, buscarVizinhos, portosProximos } from "./lib/logistica.ts";
+import { buscarAlcance, buscarRegiao, cidadesNoAlcance } from "./lib/alcance.ts";
+import { fichaPdfHtml, gerarPdf } from "./lib/pdf.ts";
 import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pastaPublico, pastaSaida, salvarFicha } from "./lib/pastas.ts";
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
 import { fecharNavegador, renderizarImagem, renderizarVideo } from "./lib/render.ts";
@@ -121,6 +123,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
       marca: { nome: nomeDado ?? "Minha marca", cor: "#C8643C", corTexto: "#FFFFFF" },
     };
     salvarFicha(ficha);
+    if (galpao) await comandos.logistica({ pos: [slug], op: {} });
     console.log(`\nFicha criada: ${path.join(pastaImovel(slug), "ficha.json")}`);
     console.log(`Localização: ${ficha.localizacao}${ficha.localizacao === "aproximada" ? ` (círculo de ${raio} m)` : ""}`);
     console.log(`Pontos (★ = entra no vídeo):\n${resumoPontos(ficha)}`);
@@ -133,6 +136,63 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     f.area = sortearArea(f.local, f.raioAproxM);
     salvarFicha(f);
     console.log(`Área sorteada de novo (raio ${f.raioAproxM} m). Agora rode: dados ${f.slug}`);
+  },
+
+  // Galpão: portos, aeroporto de carga, CEASA, vizinhos logísticos e alcance de caminhão (15/30/60 min).
+  async logistica({ pos }) {
+    const f = carregarFicha(exigirSlug(pos));
+    const cache = pastaCache(f.slug);
+    const centro = fichaPublica(f).centro;
+    console.log("Procurando portos, aeroporto de carga e CEASA...");
+    const ids = new Set(f.pontos.map((p) => p.id));
+    const temAero = f.pontos.some((p) => p.tipo === "aeroporto");
+    const novos = [
+      ...portosProximos(f.local).map((p, i) => ({ ...p, noVideo: i === 0 })),
+      ...aeroportoDeCarga(f.local).filter((a) => !f.pontos.some((p) => p.tipo === "aeroporto" && metrosEntre(p, a) < 3000)).map((a) => ({ ...a, noVideo: !temAero })),
+      ...(await buscarCeasa(f.local, cache)),
+    ].filter((p) => !ids.has(p.id));
+    f.pontos = [...f.pontos, ...(await calcularTrechos(f.local, novos, cache, true))];
+    console.log("Procurando vizinhos logísticos (centros de distribuição, condomínios)...");
+    const vizinhos = await buscarVizinhos(centro, cache);
+    console.log("Calculando o alcance de caminhão (15, 30 e 60 min)...");
+    let alcance: { minutos: number; poligono: [number, number][]; cidades: string[] }[] = [];
+    try {
+      const regiao = await buscarRegiao(centro, cache);
+      fs.writeFileSync(path.join(pastaPublico(f.slug), "regiao.json"), JSON.stringify(regiao));
+      alcance = cidadesNoAlcance(await buscarAlcance(centro, cache), regiao.cidades);
+    } catch (e) {
+      console.log(`  (alcance indisponível agora: ${(e as Error).message.split("\n")[0]}; rode "logistica ${f.slug}" mais tarde)`);
+    }
+    f.logistica = { alcance, vizinhos };
+    salvarFicha(f);
+    for (const a of alcance) console.log(`  ${a.minutos} min de caminhão: ${a.cidades.join(", ") || "—"}`);
+    for (const v of vizinhos) console.log(`  vizinho: ${v.nome} (${(v.metros / 1000).toFixed(1).replace(".", ",")} km)`);
+  },
+
+  // Ficha técnica em PDF (A4): capa, alcance, galpão isométrico, acessos, vizinhos e contato.
+  async ficha({ pos }) {
+    const f = carregarFicha(exigirSlug(pos));
+    exigirDados(f.slug);
+    const fp = fichaPublica(f);
+    const dir = path.join(pastaSaida(f.slug), "ficha");
+    fs.mkdirSync(dir, { recursive: true });
+    const img: Record<string, string> = {};
+    console.log("Montando as imagens da ficha...");
+    await renderizarImagem({ publico: pastaPublico(f.slug), composicao: "CapaFicha", props: { ficha: fp, semCartao: true }, saida: path.join(dir, "capa.png") });
+    img.capa = "capa.png";
+    if (fp.logistica?.alcance?.length && fs.existsSync(path.join(pastaPublico(f.slug), "regiao.json"))) {
+      await renderizarImagem({ publico: pastaPublico(f.slug), composicao: "AlcanceFicha", props: { ficha: fp }, saida: path.join(dir, "alcance.png") });
+      img.alcance = "alcance.png";
+    }
+    if (f.perfil === "galpao" && f.galpao) {
+      await renderizarImagem({ publico: pastaPublico(f.slug), composicao: "GalpaoFicha", props: { ficha: fp }, saida: path.join(dir, "galpao.png") });
+      img.galpao = "galpao.png";
+    }
+    if (f.anuncio?.mapaUrl) { await qrPng(f.anuncio.mapaUrl, path.join(dir, "qr.png")); img.qr = "qr.png"; }
+    const html = path.join(dir, "ficha.html");
+    fs.writeFileSync(html, fichaPdfHtml(fp, img));
+    const pdf = gerarPdf(html, path.join(pastaSaida(f.slug), "ficha-tecnica.pdf"));
+    console.log(`Pronto: ${pdf}`);
   },
 
   async tempos({ pos }) {
@@ -317,6 +377,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     if (fx.planta?.comodos.length || (fx.perfil === "galpao" && fx.galpao)) await comandos.planta({ pos: [slug], op: {} });
     await comandos.interativo({ pos: [slug], op: {} });
     await comandos.textos({ pos: [slug], op: {} });
+    if (fx.perfil === "galpao") await comandos.ficha({ pos: [slug], op: {} });
     console.log(`\nTudo pronto em ${pastaSaida(slug)}`);
   },
 
@@ -333,6 +394,8 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
   guia <slug> --origem "<lugar>"   guia de chegada do hóspede (endereço exato)
   qr <slug> [--url ...]            QR code do mapa/guia
   textos <slug>                    textos prontos para o anúncio
+  logistica <slug>                 galpão: portos, aeroporto de carga, CEASA, vizinhos e alcance de caminhão
+  ficha <slug>                     ficha técnica em PDF (A4) para WhatsApp/e-mail
   portfolio                        mapa com todos os imóveis
   publicar <slug>|--portfolio [--guia]   publica na Vercel (conta grátis do usuário)
   tudo <slug>                      dados + vídeos finais + capa + planta + interativo + textos`);

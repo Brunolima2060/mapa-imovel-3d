@@ -13,7 +13,7 @@ export type Face = {
   cor: string;
   prof: number;
   comodo?: string;
-  parte?: "piso" | "parede-fundo" | "parede-frente" | "movel" | "laje" | "doca" | "pilar" | "caminhao" | "patio" | "escritorio";
+  parte?: "piso" | "parede-fundo" | "parede-frente" | "movel" | "laje" | "doca" | "pilar" | "caminhao" | "patio" | "escritorio" | "divisoria";
   canto?: "fundo" | "frente";
   rotulo?: { x: number; y: number; texto: string; sub: string };
   opacidade?: number;

@@ -7,7 +7,7 @@ import { linhasFichaTecnica } from "../../src/planta/galpao.ts";
 const NOME_CURTO: Record<string, string> = {
   praia: "Praia", metro: "Metrô", trem: "Trem", onibus: "Terminal de ônibus", rodoviaria: "Rodoviária", aeroporto: "Aeroporto",
   mercado: "Mercado", padaria: "Padaria", farmacia: "Farmácia", hospital: "Hospital", restaurante: "Restaurante",
-  parque: "Parque", shopping: "Shopping", atracao: "Passeio", rodovia: "Rodovia", porto: "Porto", centro: "Centro", outro: "Ponto",
+  parque: "Parque", shopping: "Shopping", atracao: "Passeio", rodovia: "Rodovia", porto: "Porto", centro: "Centro", carga: "Centro de cargas", outro: "Ponto",
 };
 
 // Galpão: o que importa é acesso a rodovia (distância e tempo) e a ficha técnica.
@@ -18,6 +18,8 @@ const textosGalpao = (f: FichaPublica) => {
   const localizacao = [
     `Acessos logísticos${f.regiao ? ` — ${f.regiao}` : ""}`,
     ...comTempo.map((p) => `• ${p.nome}: ${acesso(p)}`),
+    ...(f.logistica?.alcance?.length ? ["", "Alcance de caminhão", ...f.logistica.alcance.map((a) => `• ${a.minutos} min: ${a.cidades.join(", ") || "—"}`)] : []),
+    ...(f.logistica?.vizinhos?.length ? ["", "Vizinhos logísticos", ...f.logistica.vizinhos.map((v) => `• ${v.nome} (${(v.metros / 1000).toFixed(1).replace(".", ",")} km)`)] : []),
     ...(ficha.length ? ["", "Ficha técnica", ...ficha.map((l) => `• ${l}`)] : []),
     "",
     "Distâncias e tempos pelas vias (OpenStreetMap), arredondados para cima; caminhões podem levar mais.",

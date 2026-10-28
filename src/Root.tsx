@@ -3,6 +3,8 @@ import { VideoImovel, roteiroDe, type PropsVideo } from "./video/VideoImovel.tsx
 import { Capa } from "./video/Capa.tsx";
 import { DURACAO_GUIA, GuiaChegada, type PropsGuia } from "./video/GuiaChegada.tsx";
 import { PlantaImagem } from "./planta/PlantaImagem.tsx";
+import { MapaAlcanceStill } from "./video/MapaAlcance.tsx";
+import { GalpaoFicha } from "./planta/PlantaImagem.tsx";
 import type { FichaPublica } from "./ficha.ts";
 
 const FPS = 30;
@@ -24,6 +26,10 @@ export const Raiz: React.FC = () => (
     <Composition id="GuiaVertical" component={GuiaChegada} width={1080} height={1920} fps={FPS} durationInFrames={DURACAO_GUIA * FPS} defaultProps={guiaExemplo} />
     <Composition id="GuiaHorizontal" component={GuiaChegada} width={1920} height={1080} fps={FPS} durationInFrames={DURACAO_GUIA * FPS} defaultProps={guiaExemplo} />
     <Still id="Planta" component={PlantaImagem} width={1600} height={1200} defaultProps={{ ficha: exemplo }} />
+    <Still id="Alcance" component={({ ficha }: { ficha: FichaPublica }) => <MapaAlcanceStill ficha={ficha} largura={1400} altura={1400} />} width={1400} height={1400} defaultProps={{ ficha: exemplo }} />
+    <Still id="AlcanceFicha" component={({ ficha }: { ficha: FichaPublica }) => <MapaAlcanceStill ficha={ficha} largura={1100} altura={1080} />} width={1100} height={1080} defaultProps={{ ficha: exemplo }} />
+    <Still id="CapaFicha" component={Capa} width={1300} height={1080} defaultProps={{ ficha: exemplo, semCartao: true }} />
+    <Still id="GalpaoFicha" component={GalpaoFicha} width={1800} height={900} defaultProps={{ ficha: exemplo }} />
     <Still id="Capa" component={Capa} width={1080} height={1920} defaultProps={{ ficha: exemplo }} />
     <Still id="CapaHorizontal" component={Capa} width={1920} height={1080} defaultProps={{ ficha: exemplo }} />
   </>

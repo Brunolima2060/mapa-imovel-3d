@@ -1,19 +1,20 @@
 // Roteiro do vídeo e câmera. A câmera é descrita por (alvo, distância, azimute, elevação): interpolar esses
 // números dá arcos suaves, sem cortes. Azimute 0 = câmera ao sul olhando para o norte.
 
-export type TipoCena = "abertura" | "chegada" | "ponto" | "planta" | "foto" | "fecho";
+export type TipoCena = "abertura" | "chegada" | "ponto" | "alcance" | "planta" | "foto" | "fecho";
 export type Cena = { tipo: TipoCena; ini: number; dur: number; indice: number };
 export type Roteiro = { cenas: Cena[]; total: number; fps: number };
 export type Quadro = { pos: [number, number, number]; alvo: [number, number, number]; fov: number };
 type Pose = { ax: number; az: number; dist: number; azim: number; elev: number };
 
-export const DURACAO = { abertura: 2.5, chegada: 3, ponto: 3, planta: 5, foto: 2, fecho: 3 } as const;
+export const DURACAO = { abertura: 2.5, chegada: 3, ponto: 3, alcance: 6, planta: 5, foto: 2, fecho: 3 } as const;
 export const MAX_FOTOS = 4;
 const TRANSICAO = 1.4; // segundos de viagem no começo de cada cena
 
-export const montarRoteiro = ({ nPontos, comPlanta, nFotos, fps }: { nPontos: number; comPlanta: boolean; nFotos: number; fps: number }): Roteiro => {
+export const montarRoteiro = ({ nPontos, comPlanta, nFotos, fps, comAlcance = false }: { nPontos: number; comPlanta: boolean; nFotos: number; fps: number; comAlcance?: boolean }): Roteiro => {
   const tipos: [TipoCena, number][] = [["abertura", 0], ["chegada", 0]];
   for (let i = 0; i < nPontos; i++) tipos.push(["ponto", i]);
+  if (comAlcance) tipos.push(["alcance", 0]);
   if (comPlanta) tipos.push(["planta", 0]);
   for (let i = 0; i < Math.min(nFotos, MAX_FOTOS); i++) tipos.push(["foto", i]);
   tipos.push(["fecho", 0]);
@@ -75,6 +76,7 @@ const posesDaCena = (c: Cena, pontos: { x: number; z: number }[], vertical: bool
       const base = { ax: p.x * 0.55, az: p.z * 0.55, dist, azim, elev: 52 * grau };
       return [base, { ...base, dist: dist * 0.94, azim: azim + 5 * grau }];
     }
+    case "alcance":
     case "planta":
     case "foto":
       // a cena 3D fica ao fundo, desfocada; câmera gira devagar em volta do imóvel

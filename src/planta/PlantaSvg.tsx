@@ -69,7 +69,7 @@ export const GalpaoAnimado: React.FC<{ galpao: FichaGalpao; cor: string; largura
     <div style={{ position: "absolute", inset: 0, background: "rgba(242, 232, 218, 0.84)", fontFamily: FONTE }}>
       <div style={{ position: "absolute", top: (vertical ? 250 : 60) * s, left: 0, right: 0, textAlign: "center", fontSize: 30 * s, letterSpacing: 6 * s, textTransform: "uppercase", color: cor, fontWeight: 700 }}>Ficha técnica</div>
       <div style={{ position: "absolute", left: 0, top: (vertical ? 330 : 120) * s, width: larguraDesenho, height: alturaDesenho }}>
-        <DesenhoPlanta faces={montarGalpao(galpao, { explosao: e, cor })} largura={larguraDesenho} altura={alturaDesenho} margem={0.04} rotulos={0} />
+        <DesenhoPlanta faces={montarGalpao(galpao, { explosao: e, cor })} largura={larguraDesenho} altura={alturaDesenho} margem={0.04} rotulos={(galpao.modulosDetalhe?.length ?? 0) > 1 || (galpao.modulos ?? 1) > 1 ? vis : 0} escalaTexto={1.5} />
       </div>
       <div style={{ position: "absolute", opacity: vis, transform: `translateY(${(1 - vis) * 24 * s}px)`, ...(vertical ? { left: 70 * s, right: 70 * s, top: 330 * s + alturaDesenho + 20 * s } : { right: 70 * s, top: 200 * s, width: largura * 0.32 }), display: "flex", flexDirection: "column", gap: 14 * s }}>
         {linhas.map((l) => (

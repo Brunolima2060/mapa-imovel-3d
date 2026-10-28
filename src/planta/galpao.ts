@@ -29,7 +29,9 @@ export const linhasFichaTecnica = (g: FichaGalpao): string[] =>
     g.sprinklers && "Sprinklers",
     g.escritorioM2 && `Escritório ${fmt(g.escritorioM2)} m²`,
     g.patio,
-    g.modulos && g.modulos > 1 ? `${g.modulos} módulos` : "",
+    g.modulosDetalhe?.length && g.modulosDetalhe.length > 1
+      ? `${g.modulosDetalhe.length} módulos a partir de ${fmt(Math.min(...g.modulosDetalhe.map((m) => m.areaM2)))} m²`
+      : g.modulos && g.modulos > 1 ? `${g.modulos} módulos` : "",
     ...(g.extras ?? []),
   ].filter((x): x is string => !!x);
 
@@ -44,6 +46,26 @@ const paredeEmPedacos = (x: number, y: number, comp: number, aoLongoX: boolean, 
   });
 };
 
+type Modulo = { nome: string; x: number; w: number; areaM2: number; docas: number; disponivel?: boolean };
+
+// Divide a nave em módulos pelo comprimento (proporcional à área de cada um). Sem módulos: um só, "Galpão".
+export const modulosDoGalpao = (g: FichaGalpao, C: number): Modulo[] => {
+  const det = g.modulosDetalhe?.length ? g.modulosDetalhe : g.modulos && g.modulos > 1
+    ? Array.from({ length: g.modulos }, (_, i) => ({ nome: `Módulo ${String.fromCharCode(65 + i)}`, areaM2: g.areaConstruidaM2 / g.modulos!, docas: undefined as number | undefined, disponivel: undefined as boolean | undefined }))
+    : [{ nome: "Galpão", areaM2: g.areaConstruidaM2, docas: g.docas, disponivel: undefined as boolean | undefined }];
+  const total = det.reduce((a, m) => a + m.areaM2, 0);
+  const docasSemDono = Math.max(0, g.docas - det.reduce((a, m) => a + (m.docas ?? 0), 0));
+  const semDono = det.filter((m) => m.docas === undefined).length;
+  let x = 0;
+  return det.map((m, i) => {
+    const w = (m.areaM2 / total) * C;
+    const docas = m.docas ?? Math.floor(docasSemDono / semDono) + (i < docasSemDono % semDono ? 1 : 0);
+    const mod = { nome: m.nome, x, w, areaM2: m.areaM2, docas, disponivel: m.disponivel };
+    x += w;
+    return mod;
+  });
+};
+
 export const montarGalpao = (g: FichaGalpao, { explosao, cor = "#C8643C" }: { explosao: number; cor?: string }): Face[] => {
   const e = Math.min(1, Math.max(0, explosao));
   const { largura: L, comprimento: C } = dimensoesGalpao(g);
@@ -51,61 +73,72 @@ export const montarGalpao = (g: FichaGalpao, { explosao, cor = "#C8643C" }: { ex
   const P = projetarIso;
   const pisos: Face[] = [];
   const caixas: Caixa[] = [];
-  const chao = (x: number, y: number, w: number, d: number, cor: string, parte: Face["parte"], prof: number, rotulo?: Face["rotulo"]) =>
-    pisos.push({ pts: [P(x, y, 0), P(x + w, y, 0), P(x + w, y + d, 0), P(x, y + d, 0)], tom: "chao", cor, prof, parte, rotulo, comodo: rotulo?.texto });
-
-  // pátio com faixas de vaga na frente das docas
-  chao(-4, L, C + 8, PATIO, COR.patio, "patio", -2e6);
-  const centro = P(C / 2, L / 2, 0);
-  chao(0, 0, C, L, COR.piso, "piso", -1.9e6, { x: centro[0], y: centro[1], texto: "Galpão", sub: `${fmt(g.areaConstruidaM2)} m² · pé-direito ${String(H).replace(".", ",")} m` });
-
-  // docas: portas na fachada da frente (y = L), espalhadas pelo comprimento, longe dos cantos
-  const nDocas = Math.max(0, g.docas);
-  const passo = nDocas ? Math.min(6, (C - 8) / nDocas) : 0;
-  const ini = (C - passo * nDocas) / 2;
-  for (let i = 0; i < nDocas; i++) {
-    const x = ini + i * passo + (passo - 3) / 2;
-    caixas.push({ x, y: L - 0.05, z: 1.2, w: 3, d: 0.25, h: 3.2, cor: COR.porta, parte: "doca", comodo: `doca-${i + 1}` });
-    chao(x - 0.5, L, 4, 0.12, COR.faixa, "patio", -1.95e6);
-    // caminhão encostado em até 4 docas
-    if (i % Math.max(1, Math.ceil(nDocas / 4)) === 0) {
-      caixas.push({ x: x + 0.2, y: L + 1.2, z: 1.1, w: 2.6, d: 13.6, h: 3.0, cor: COR.bau, parte: "caminhao" });
-      caixas.push({ x: x + 0.2, y: L + 15.1, z: 0.6, w: 2.6, d: 2.6, h: 3.0, cor, parte: "caminhao" });
-    }
-  }
-
-  // paredes: fundo inteiras (platibanda +1,5 m), frente cortadas para ver dentro
+  const chao = (x: number, y: number, w: number, d: number, corChao: string, parte: Face["parte"], prof: number, rotulo?: Face["rotulo"]) =>
+    pisos.push({ pts: [P(x, y, 0), P(x + w, y, 0), P(x + w, y + d, 0), P(x, y + d, 0)], tom: "chao", cor: corChao, prof, parte, rotulo, comodo: rotulo?.texto });
+  const mods = modulosDoGalpao(g, C);
+  const n = mods.length;
+  const afasta = n > 1 ? 9 : 0; // ao desmontar, módulos se separam 9 m
   const esp = 0.3;
-  caixas.push(...paredeEmPedacos(0, 0, C, true, esp, H + 1.5, "parede-fundo"));
-  caixas.push(...paredeEmPedacos(0, esp, L - esp, false, esp, H + 1.5, "parede-fundo"));
-  caixas.push(...paredeEmPedacos(0, L - esp, C, true, esp, 1.1, "parede-frente"));
-  caixas.push(...paredeEmPedacos(C - esp, esp, L - 2 * esp, false, esp, 1.1, "parede-frente"));
+  let doca = 0;
 
-  // pilares: vãos de ~22 m no comprimento e ~25 m na largura
-  const nx = Math.max(1, Math.round(C / 22)), ny = Math.max(1, Math.round(L / 25));
-  for (let i = 1; i < nx; i++) for (let j = 1; j < ny; j++) caixas.push({ x: (C / nx) * i - 0.3, y: (L / ny) * j - 0.3, z: 0, w: 0.6, d: 0.6, h: H, cor: COR.pilar, parte: "pilar" });
+  // pátio com faixas de vaga na frente das docas (acompanha a explosão)
+  chao(-4 - (afasta * e * (n - 1)) / 2, L, C + 8 + afasta * e * (n - 1), PATIO, COR.patio, "patio", -2e6);
 
-  // mezanino de escritório no canto do fundo
-  let fimEscritorio = 0;
-  if (g.escritorioM2 && g.escritorioM2 > 0) {
-    const w = Math.min(C * 0.3, Math.sqrt(g.escritorioM2 / 2) * 2);
-    const d = Math.min(L * 0.6, g.escritorioM2 / 2 / w);
-    caixas.push({ x: esp, y: esp, z: 0, w, d, h: 6, cor: COR.escritorio, parte: "escritorio", comodo: "Escritório" });
-    fimEscritorio = w + 4;
-  }
+  mods.forEach((m, i) => {
+    const dx = (i - (n - 1) / 2) * afasta * e;
+    const x0 = m.x + dx;
+    const centro = P(x0 + m.w / 2, L / 2, 0);
+    const sub = n > 1 ? `${fmt(m.areaM2)} m² · ${m.docas} docas${m.disponivel === false ? " · ocupado" : m.disponivel ? " · disponível" : ""}` : `${fmt(g.areaConstruidaM2)} m² · pé-direito ${String(H).replace(".", ",")} m`;
+    chao(x0, 0, m.w, L, m.disponivel === false ? "#CBC7BF" : m.disponivel ? "#D7E6EA" : COR.piso, "piso", -1.9e6 + i, { x: centro[0], y: centro[1], texto: m.nome, sub });
 
-  // porta-paletes: fileiras ao longo do comprimento, com corredores de 3,5 m, longe das docas
-  const altRack = Math.min(H - 2, 9);
-  const x0 = Math.max(fimEscritorio, C * 0.08), x1 = C * 0.94;
-  for (let y = L * 0.12; y + 1.1 <= L * 0.68; y += 1.1 + 3.5) {
-    for (let x = x0; x < x1 - 1; x += SEG) {
-      const w = Math.min(SEG - 0.4, x1 - x);
-      caixas.push({ x, y, z: 0, w, d: 1.1, h: altRack, cor: COR.rack, parte: "movel" });
-      caixas.push({ x: x + 0.15, y: y + 0.05, z: altRack - 0.01, w: w - 0.3, d: 1.0, h: 0.01, cor: COR.carga, parte: "movel" });
+    // docas do módulo, espalhadas pela frente dele
+    const passo = m.docas ? Math.min(6, (m.w - 6) / m.docas) : 0;
+    const ini = x0 + (m.w - passo * m.docas) / 2;
+    for (let k = 0; k < m.docas; k++, doca++) {
+      const x = ini + k * passo + (passo - 3) / 2;
+      caixas.push({ x, y: L - 0.05, z: 1.2, w: 3, d: 0.25, h: 3.2, cor: COR.porta, parte: "doca", comodo: `doca-${doca + 1}` });
+      chao(x - 0.5, L, 4, 0.12, COR.faixa, "patio", -1.95e6);
+      if (doca % Math.max(1, Math.ceil(g.docas / 4)) === 0) {
+        caixas.push({ x: x + 0.2, y: L + 1.2, z: 1.1, w: 2.6, d: 13.6, h: 3.0, cor: COR.bau, parte: "caminhao" });
+        caixas.push({ x: x + 0.2, y: L + 15.1, z: 0.6, w: 2.6, d: 2.6, h: 3.0, cor, parte: "caminhao" });
+      }
     }
-  }
 
-  if (e < 0.98) caixas.push({ x: -1, y: -1, z: H + 1.5 + e * 22, w: C + 2, d: L + 2, h: 0.6, cor: COR.telhado, parte: "laje", opacidade: 1 - e });
+    // paredes: fundo inteiro; lateral esquerda inteira (entre módulos é a divisória); frente e última lateral baixas
+    caixas.push(...paredeEmPedacos(x0, 0, m.w, true, esp, H + 1.5, "parede-fundo"));
+    caixas.push(...paredeEmPedacos(x0, esp, L - esp, false, esp, H + 1.5, i === 0 ? "parede-fundo" : "divisoria"));
+    caixas.push(...paredeEmPedacos(x0, L - esp, m.w, true, esp, 1.1, "parede-frente"));
+    if (i === n - 1 || e > 0.05) caixas.push(...paredeEmPedacos(x0 + m.w - esp, esp, L - 2 * esp, false, esp, i === n - 1 ? 1.1 : H + 1.5, i === n - 1 ? "parede-frente" : "divisoria"));
+
+    // pilares do módulo
+    const nx = Math.max(1, Math.round(m.w / 22)), ny = Math.max(1, Math.round(L / 25));
+    for (let a = 1; a < nx; a++) for (let b = 1; b < ny; b++) caixas.push({ x: x0 + (m.w / nx) * a - 0.3, y: (L / ny) * b - 0.3, z: 0, w: 0.6, d: 0.6, h: H, cor: COR.pilar, parte: "pilar" });
+
+    // escritório no primeiro módulo
+    let fimEscritorio = x0;
+    if (i === 0 && g.escritorioM2 && g.escritorioM2 > 0) {
+      const w = Math.min(m.w * 0.35, Math.sqrt(g.escritorioM2 / 2) * 2);
+      const d = Math.min(L * 0.6, g.escritorioM2 / 2 / w);
+      caixas.push({ x: x0 + esp, y: esp, z: 0, w, d, h: 6, cor: COR.escritorio, parte: "escritorio", comodo: "Escritório" });
+      fimEscritorio = x0 + w + 4;
+    }
+
+    // porta-paletes (módulo ocupado aparece vazio de propósito? não: ocupado = cheio, disponível = vazio e limpo)
+    if (m.disponivel !== true) {
+      const altRack = Math.min(H - 2, 9);
+      const rx0 = Math.max(fimEscritorio, x0 + m.w * 0.08), rx1 = x0 + m.w * 0.94;
+      for (let y = L * 0.12; y + 1.1 <= L * 0.68; y += 1.1 + 3.5) {
+        for (let x = rx0; x < rx1 - 1; x += SEG) {
+          const w = Math.min(SEG - 0.4, rx1 - x);
+          caixas.push({ x, y, z: 0, w, d: 1.1, h: altRack, cor: COR.rack, parte: "movel" });
+          caixas.push({ x: x + 0.15, y: y + 0.05, z: altRack - 0.01, w: w - 0.3, d: 1.0, h: 0.01, cor: COR.carga, parte: "movel" });
+        }
+      }
+    }
+
+    if (e < 0.98) caixas.push({ x: x0 - (i === 0 ? 1 : 0), y: -1, z: H + 1.5 + e * 22, w: m.w + (i === 0 || i === n - 1 ? 1 : 0), d: L + 2, h: 0.6, cor: COR.telhado, parte: "laje", opacidade: 1 - e });
+  });
+
   const faces = caixas.flatMap(facesDaCaixa);
   for (const f of faces) if (f.parte === "laje") f.prof = 1e6;
   return [...pisos, ...faces].sort((a, b) => a.prof - b.prof);

@@ -19,6 +19,7 @@ const TRACOS: Record<TipoPonto, string> = {
   rodovia: "M8 3L5 21M16 3l3 18M12 4v2.5M12 10v3M12 17v3",
   porto: "M12 3v15M8 7h8M5 13a7 7 0 0 0 14 0M3 21c2 0 2-1 4-1s2 1 5 1 3-1 5-1 2 1 4 1",
   centro: "M4 21V10l8-6 8 6v11M9 21v-6h6v6",
+  carga: "M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10",
   outro: "M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11zM12 7.5a2.5 2.5 0 1 1 0 5a2.5 2.5 0 0 1 0-5",
 };
 

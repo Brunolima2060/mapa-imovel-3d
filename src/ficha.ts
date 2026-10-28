@@ -9,7 +9,7 @@ const trecho = z.object({ metros: z.number().nonnegative(), minutos: z.number().
 
 export const TIPOS_PONTO = [
   "praia", "metro", "trem", "onibus", "mercado", "padaria", "farmacia", "hospital", "restaurante",
-  "parque", "shopping", "atracao", "aeroporto", "rodoviaria", "rodovia", "porto", "centro", "outro",
+  "parque", "shopping", "atracao", "aeroporto", "rodoviaria", "rodovia", "porto", "centro", "carga", "outro",
 ] as const;
 
 const ponto = latLon.extend({
@@ -57,6 +57,7 @@ const fichaGalpao = z.object({
   escritorioM2: z.number().nonnegative().optional(),
   patio: z.string().optional(), // ex.: "pátio para carretas" (texto livre)
   modulos: z.number().int().positive().optional(),
+  modulosDetalhe: z.array(z.object({ nome: z.string(), areaM2: z.number().positive(), docas: z.number().int().nonnegative().optional(), disponivel: z.boolean().optional() })).optional(),
   extras: z.array(z.string()).optional(), // ex.: "portaria 24h", "cabine primária"
 });
 
@@ -80,7 +81,16 @@ export const esquemaFicha = z.object({
     cor: z.string().default("#C8643C"),
     corTexto: z.string().default("#FFFFFF"),
     logo: z.string().optional(),
+    contato: z.string().optional(), // telefone / WhatsApp / e-mail do corretor (aparece no PDF e no fecho)
+    site: z.string().optional(),
   }),
+  // Galpão: alcance de caminhão (isócronas) e vizinhos logísticos de peso. Calculados a partir do centro público.
+  logistica: z
+    .object({
+      alcance: z.array(z.object({ minutos: z.number(), poligono: z.array(z.tuple([z.number(), z.number()])), cidades: z.array(z.string()) })).optional(),
+      vizinhos: z.array(latLon.extend({ nome: z.string(), metros: z.number() })).optional(),
+    })
+    .optional(),
   anuncio: z.object({ link: z.string().optional(), plataforma: z.string().optional(), mapaUrl: z.string().optional() }).optional(),
   planta: z.object({ comodos: z.array(comodo), moveis: z.array(movel).optional(), areaTotalM2: z.number().optional() }).optional(),
   guia: z

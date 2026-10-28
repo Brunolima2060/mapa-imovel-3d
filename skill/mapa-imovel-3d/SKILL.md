@@ -64,6 +64,8 @@ já está tudo conferido.
 | `guia <slug> --origem "<lugar>" [--entrada ".."] [--estacionamento ".."] [--observacoes ".."] [--final] [--sem-video]` | guia de chegada: `guia.html` + vídeo do caminho |
 | `publicar <slug> --guia` | põe o guia no ar com link difícil de adivinhar |
 | `portfolio` / `publicar --portfolio` | mapa com todos os imóveis |
+| `logistica <slug>` | galpão: alcance de caminhão, portos, aeroporto de carga, CEASA, vizinhos logísticos |
+| `ficha <slug>` | ficha técnica em PDF (A4) para WhatsApp/e-mail |
 
 Tudo sai em `~/mapas-imoveis/<slug>/saida/`.
 
@@ -81,6 +83,22 @@ invente números.
 Com a ficha técnica, o vídeo ganha a cena **"Ficha técnica"** (galpão isométrico com docas, caminhões, pilares,
 porta-paletes e escritório, com o telhado subindo) e o fecho mostra os números principais. `planta <slug>` gera a
 imagem e a página interativa do galpão; `textos` traz os blocos "Acessos logísticos" e "Ficha técnica".
+
+**Logística completa (roda sozinha no `novo` do galpão; para refazer: `logistica <slug>`):**
+- **Alcance de caminhão** em 15, 30 e 60 min (Valhalla/OpenStreetMap) e as cidades dentro de cada faixa — vira cena
+  "Alcance de caminhão" no vídeo, camada no mapa interativo, bloco nos textos e no PDF.
+- **Portos** (os 2 mais próximos, com km e tempo de carro), **aeroporto de carga**, **CEASA**.
+- **Vizinhos logísticos**: centros de distribuição e condomínios logísticos conhecidos a até 12 km (Mercado Livre,
+  Amazon, Correios...), prova de que a região é polo logístico. Revise a lista com o usuário (tire o que não for
+  relevante editando `logistica.vizinhos` na ficha).
+
+**Galpão modulado:** preencha `galpao.modulosDetalhe` (nome, área, docas, `disponivel` true/false). O desenho
+separa os módulos, mostra área e docas de cada um, pinta os disponíveis de azul-claro e o ocupado com porta-paletes.
+
+**Ficha técnica em PDF (A4, uma página):** `ficha <slug>` → `saida/ficha-tecnica.pdf` com maquete, mapa de
+alcance, ficha técnica, acessos, alcance por cidade, vizinhos, galpão isométrico e o **contato** do corretor
+(`marca.contato` e `marca.site` na ficha — pergunte se ainda não tiver). Ideal para mandar no WhatsApp junto com
+o vídeo. `tudo <slug>` já inclui o PDF para galpão.
 
 Galpão costuma ter localização pública (condomínio logístico, placa na rodovia): **pergunte** se pode usar
 `"localizacao": "exata"`; se o dono preferir sigilo, mantenha a aproximada.

@@ -9,6 +9,7 @@ import { alturaEm, type DadosCidade } from "../cidade.ts";
 import { useDadosCidade } from "./dados.ts";
 import { Assinatura, CartaoPonto, Etiqueta, Fecho, Titulo, entrada, saida } from "./Interface.tsx";
 import { GalpaoAnimado, PlantaAnimada } from "../planta/PlantaSvg.tsx";
+import { MapaAlcance, useRegiao } from "./MapaAlcance.tsx";
 
 loadFont("normal", { weights: ["500", "600", "700"], subsets: ["latin", "latin-ext"] });
 
@@ -16,18 +17,19 @@ export type PropsVideo = { ficha: FichaPublica; comPlanta: boolean; fotos: strin
 
 export const pontosDoVideo = (f: FichaPublica) => f.pontos.filter((p) => p.noVideo);
 export const roteiroDe = (p: PropsVideo, fps: number): Roteiro =>
-  montarRoteiro({ nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && (p.ficha.perfil === "galpao" ? !!p.ficha.galpao : !!p.ficha.planta?.comodos.length), nFotos: p.fotos.length, fps });
+  montarRoteiro({ comAlcance: !!p.ficha.logistica?.alcance?.length, nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && (p.ficha.perfil === "galpao" ? !!p.ficha.galpao : !!p.ficha.planta?.comodos.length), nFotos: p.fotos.length, fps });
 
 const Ceu: React.FC = () => <AbsoluteFill style={{ background: `linear-gradient(180deg, ${ESTILO.ceuTopo} 0%, ${ESTILO.ceuBase} 62%)` }} />;
 
 export const VideoImovel: React.FC<PropsVideo> = (props) => {
   const dados = useDadosCidade();
+  const regiao = useRegiao();
   const { width, height, fps } = useVideoConfig();
   if (!dados) return <Ceu />;
-  return <Video {...props} dados={dados} largura={width} altura={height} fps={fps} />;
+  return <Video {...props} dados={dados} regiao={regiao} largura={width} altura={height} fps={fps} />;
 };
 
-const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura: number; fps: number }> = ({ ficha, fotos, comPlanta, dados, largura, altura, fps }) => {
+const Video: React.FC<PropsVideo & { dados: DadosCidade; regiao: ReturnType<typeof useRegiao>; largura: number; altura: number; fps: number }> = ({ ficha, fotos, comPlanta, dados, regiao, largura, altura, fps }) => {
   const f = useCurrentFrame();
   const vertical = altura > largura;
   const escala = Math.min(largura, altura) / 1080;
@@ -46,7 +48,7 @@ const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura
     return { id: p.id, x: xz[i].x, z: xz[i].z, ativo, arco: f >= visivelDesde ? arco : 0 };
   });
 
-  const fundoDesfocado = cena.tipo === "planta" || cena.tipo === "foto";
+  const fundoDesfocado = cena.tipo === "planta" || cena.tipo === "foto" || cena.tipo === "alcance";
   const desfoque = fundoDesfocado ? interpolate(local, [0, 12], [0, 14], { extrapolateRight: "clamp" }) * saida(f, cena.ini + cena.dur, 10) : 0;
 
   return (
@@ -87,6 +89,32 @@ const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura
             {t.visivel && <Etiqueta x={Math.min(largura - 230 * escala, Math.max(230 * escala, t.x))} y={Math.max(260 * escala, t.y)} texto={p.nome} cor={ficha.marca.cor} vis={vis} escala={escala * 0.9} />}
             <CartaoPonto p={p} cor={ficha.marca.cor} corTexto={ficha.marca.corTexto} vis={vis} escala={escala} vertical={vertical} n={cena.indice + 1} total={pontos.length} longe={m.longe} />
           </>
+        );
+      })()}
+
+      {cena.tipo === "alcance" && regiao && (() => {
+        const vis = entrada(local, 0, 12) * saida(f, cena.ini + cena.dur, 10);
+        const prog = interpolate(local, [10, cena.dur * 0.6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+        const lado = vertical ? largura : altura;
+        const topo = vertical ? 300 * escala : 0;
+        const viz = (ficha.logistica?.vizinhos ?? []).slice(0, 3);
+        return (
+          <AbsoluteFill style={{ opacity: vis, background: "rgba(242,232,218,0.85)" }}>
+            <div style={{ position: "absolute", left: vertical ? 0 : (largura - lado) / 2, top: topo, width: lado, height: lado, overflow: "hidden", borderRadius: vertical ? 0 : 24 * escala }}>
+              <MapaAlcance ficha={ficha} regiao={regiao} largura={lado} altura={lado} progresso={prog} />
+            </div>
+            {viz.length > 0 && (
+              <div style={{ position: "absolute", left: 60 * escala, right: vertical ? 60 * escala : undefined, width: vertical ? undefined : 560 * escala, top: vertical ? topo + lado + 30 * escala : 140 * escala, background: ESTILO.cartao, borderRadius: 28 * escala, padding: `${24 * escala}px ${30 * escala}px`, opacity: interpolate(local, [cena.dur * 0.55, cena.dur * 0.7], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" }) }}>
+                <div style={{ fontSize: 24 * escala, letterSpacing: 4 * escala, textTransform: "uppercase", color: ficha.marca.cor, fontWeight: 700 }}>Vizinhos logísticos</div>
+                {viz.map((v) => (
+                  <div key={v.nome} style={{ display: "flex", justifyContent: "space-between", gap: 20 * escala, fontSize: 32 * escala, fontWeight: 600, color: ESTILO.texto, marginTop: 8 * escala }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.nome}</span>
+                    <span style={{ color: ficha.marca.cor, whiteSpace: "nowrap" }}>{(v.metros / 1000).toFixed(1).replace(".", ",")} km</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </AbsoluteFill>
         );
       })()}
 

@@ -15,12 +15,13 @@ Fonte única de tudo. Criada pelo comando `novo`; edite à vontade (JSON). Campo
 | `raioAproxM` | sim | raio do círculo aproximado, em metros (padrão 250) |
 | `area` | sim | centro do círculo (gerado; o imóvel fica dentro, fora do centro) |
 | `pontos[]` | sim | pontos próximos: `id`, `nome`, `tipo`, `lat`, `lon`, `ape`/`carro` (`metros`, `minutos`), `noVideo` |
-| `marca` | sim | `nome`, `cor` (#hex), `corTexto` (#hex), `logo` (arquivo em `publico/`, ex. `"logo.png"`) |
+| `marca` | sim | `nome`, `cor` (#hex), `corTexto` (#hex), `logo` (arquivo em `publico/`), `contato`, `site` |
 | `anuncio` | sim | `link`, `plataforma` ("Airbnb"), `mapaUrl` (preenchido pelo `publicar`) |
 | `planta` | sim | `comodos[]`, `moveis[]`, `areaTotalM2` (opcional) |
 | `fotos[]` | sim | arquivos em `publico/`, ex. `"fotos/sala.jpg"` (até 4 no vídeo) |
 | `perfil` | sim | `"residencial"` (padrão) ou `"galpao"` |
 | `galpao` | sim | ficha técnica do galpão (abaixo) |
+| `logistica` | sim | `alcance` (faixas de caminhão com cidades) e `vizinhos` (gerados por `logistica`) |
 | `guia` | **não** | `origem`, `rota`, `minutos`, `metros`, `entrada`, `estacionamento`, `observacoes`, `url` |
 
 Tipos de ponto: `praia`, `metro`, `trem`, `onibus`, `rodoviaria`, `aeroporto`, `mercado`, `padaria`, `farmacia`,
@@ -71,7 +72,11 @@ de uma fileira de cômodos bate com a largura total. Se a planta tiver formato d
   "peDireitoM": 12, "docas": 10, "niveladoras": 6,
   "pisoTm2": 6, "energiaKva": 500, "sprinklers": true,
   "escritorioM2": 350, "patio": "Pátio para carretas", "modulos": 2,
-  "extras": ["Portaria 24h", "Cabine primária"]
+  "extras": ["Portaria 24h", "Cabine primária"],
+  "modulosDetalhe": [
+    { "nome": "Módulo A", "areaM2": 2200, "docas": 4, "disponivel": false },
+    { "nome": "Módulo B", "areaM2": 4000, "docas": 6, "disponivel": true }
+  ]
 }
 ```
 
