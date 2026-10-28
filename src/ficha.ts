@@ -2,7 +2,7 @@
 // O que vai a público (vídeo, capa, mapa interativo, textos) passa SEMPRE por fichaPublica().
 
 import { z } from "zod";
-import { deMetros, type LatLon } from "./geo.ts";
+import { deMetros, metrosEntre, type LatLon } from "./geo.ts";
 
 const latLon = z.object({ lat: z.number().min(-90).max(90), lon: z.number().min(-180).max(180) });
 const trecho = z.object({ metros: z.number().nonnegative(), minutos: z.number().int().positive() });
@@ -103,16 +103,23 @@ export const sorteador = (semente: string) => {
 };
 
 // Centro do círculo "localização aproximada": deslocado de 35% a 70% do raio, então o imóvel fica dentro do
-// círculo mas nunca no meio dele (quem olha não deduz a porta).
-export const aproximar = (local: LatLon, raioM: number, semente: string): LatLon => {
-  const r = sorteador(semente);
-  const ang = r() * Math.PI * 2;
-  const d = raioM * (0.35 + r() * 0.35);
+// círculo mas nunca no meio dele. O sorteio é aleatório de verdade (crypto) e fica salvo na ficha: se saísse de
+// algo público (o nome, o slug), qualquer um refaria a conta e acharia a porta.
+export const sortearArea = (local: LatLon, raioM: number): LatLon => {
+  const n = new Uint32Array(2);
+  globalThis.crypto.getRandomValues(n);
+  const ang = (n[0] / 4294967296) * Math.PI * 2;
+  const d = raioM * (0.35 + (n[1] / 4294967296) * 0.35);
   return deMetros(local, [Math.cos(ang) * d, Math.sin(ang) * d]);
 };
 
+export const areaValida = (f: Pick<Ficha, "local" | "area" | "raioAproxM">) => !!f.area && metrosEntre(f.local, f.area) <= f.raioAproxM * 0.98;
+
 export const fichaPublica = (f: Ficha): FichaPublica => {
   const { local, endereco: _e, guia: _g, ...resto } = f;
-  const centro = f.localizacao === "exata" ? local : (f.area ?? aproximar(local, f.raioAproxM, f.slug));
-  return { ...resto, centro };
+  if (f.localizacao === "aproximada" && !areaValida(f)) {
+    throw new Error("A área aproximada da ficha está faltando ou não cobre mais o imóvel (o raio mudou?). Rode: area <slug>");
+  }
+  const anuncio = f.anuncio?.link && !/^https?:\/\//i.test(f.anuncio.link) ? { ...f.anuncio, link: undefined } : f.anuncio;
+  return { ...resto, anuncio, centro: f.localizacao === "exata" ? local : f.area! };
 };

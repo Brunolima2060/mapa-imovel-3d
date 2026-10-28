@@ -35,6 +35,7 @@ const valida = (lat: number, lon: number): LatLon | null =>
 export const lerCoordenadas = (texto: string): LatLon | null => {
   const num = String.raw`(-?\d{1,3}(?:\.\d+)?)`;
   const padroes = [
+    new RegExp(String.raw`!3d${num}!4d${num}`), // pino de um lugar do Google Maps (vem antes do centro da tela)
     new RegExp(String.raw`@${num},\s*${num}`),
     new RegExp(String.raw`[?&](?:q|ll|query|destination)=${num},\s*${num}`),
     new RegExp(String.raw`^\s*${num}\s*[,;]\s*${num}\s*$`),

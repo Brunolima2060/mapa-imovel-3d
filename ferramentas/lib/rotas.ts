@@ -11,14 +11,14 @@ type Perfil = "foot" | "car";
 const par = (a: LatLon, b: LatLon) => `${a.lon.toFixed(6)},${a.lat.toFixed(6)};${b.lon.toFixed(6)},${b.lat.toFixed(6)}`;
 
 export const trecho = async (a: LatLon, b: LatLon, perfil: Perfil, cacheDir: string): Promise<Trecho | undefined> => {
-  const r = await buscar(`${BASE}/routed-${perfil}/route/v1/driving/${par(a, b)}?overview=false`, { cacheDir });
+  const r = await buscar(`${BASE}/routed-${perfil}/route/v1/driving/${par(a, b)}?overview=false`, { cacheDir, aceitarStatus: [400] });
   const rota = r.code === "Ok" ? r.routes?.[0] : undefined;
   if (!rota) return undefined;
   return { metros: Math.round(rota.distance), minutos: minutosDe(rota.duration) };
 };
 
 export const rotaCompleta = async (a: LatLon, b: LatLon, cacheDir: string) => {
-  const r = await buscar(`${BASE}/routed-car/route/v1/driving/${par(a, b)}?overview=full&geometries=geojson&steps=true`, { cacheDir });
+  const r = await buscar(`${BASE}/routed-car/route/v1/driving/${par(a, b)}?overview=full&geometries=geojson&steps=true`, { cacheDir, aceitarStatus: [400] });
   const rota = r.code === "Ok" ? r.routes?.[0] : undefined;
   if (!rota) throw new Error("Não achei caminho de carro entre a origem e o imóvel.");
   return {

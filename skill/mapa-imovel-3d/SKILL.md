@@ -19,7 +19,11 @@ Fale sempre em português, em linguagem simples: o usuário aluga imóveis, não
 
 1. **Entender o pedido.** Pegue o endereço (ou coordenadas, ou link do Google Maps) e um nome curto para o imóvel
    ("Apê na Paulista", "Casa no Itaguá"). Pergunte só o que faltar.
-2. **Criar a ficha:** `novo "<endereço>" --nome "<nome>"`. A saída lista os pontos encontrados com os tempos.
+2. **Criar a ficha:** `novo "<endereço>" --nome "<nome>"` (o nome é obrigatório e nunca deve ser a rua: ele aparece
+   no vídeo e no link). **Confirme com o usuário a linha `Achei: ...`** (cidade e bairro certos?); se estiver errado,
+   refaça com `--refazer` e o endereço com cidade/estado, ou com as coordenadas. Links curtos do celular
+   (`maps.app.goo.gl`) não trazem coordenadas: peça o link completo ou as coordenadas (no Google Maps, toque e segure no
+   lugar e copie os números). A saída lista os pontos encontrados com os tempos.
 3. **Revisar os pontos com o usuário.** Mostre a lista e pergunte o que tirar, renomear ou acrescentar. Edite
    `ficha.json` direto:
    - `noVideo: true` marca os que entram no vídeo (ideal 3 a 6). O imóvel em si, ou um ponto "colado" nele, não precisa entrar.
@@ -44,6 +48,7 @@ já está tudo conferido.
 |---|---|
 | `novo "<endereço>" [--nome ".."] [--slug x] [--exata] [--refazer]` | cria a ficha, acha os pontos e calcula os tempos |
 | `tempos <slug>` | recalcula tempos e distâncias depois de mexer nos pontos |
+| `area <slug>` | sorteia de novo o círculo aproximado (obrigatório depois de mudar `raioAproxM`; depois rode `dados`) |
 | `dados <slug>` | monta a maquete 3D (`publico/cidade.json`) |
 | `quadro <slug> <n> [<n>...] [--horizontal]` | quadros soltos do vídeo, em PNG, para conferir |
 | `video <slug> [--final] [--formato vertical\|horizontal\|ambos] [--sem-planta]` | vídeo do imóvel |
@@ -63,6 +68,8 @@ Tudo sai em `~/mapas-imoveis/<slug>/saida/`.
 
 - O padrão é **localização aproximada**: vídeo, capa, mapa e textos mostram uma **área** (círculo de 250 m), nunca a
   porta, e não citam rua nem número. As distâncias são calculadas do endereço real (não mentem).
+- O círculo é sorteado ao acaso e salvo na ficha (`area`); nunca o invente nem o calcule à mão. Mudou o raio ou o
+  modo? Rode `area <slug>` e depois `dados <slug>` (a CLI recusa maquete feita para outro centro).
 - Só mude para `"localizacao": "exata"` na ficha se o usuário pedir claramente (ex.: casa com placa e fachada públicas).
 - O **guia de chegada** usa o endereço exato de propósito: é para mandar **só depois da reserva**. Lembre o usuário disso.
 - Nunca publique `ficha.json` nem a pasta do imóvel; `publicar` envia só o HTML gerado.

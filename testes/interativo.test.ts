@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { esquemaFicha, fichaPublica } from "../src/ficha.ts";
+import { esquemaFicha, fichaPublica, sortearArea } from "../src/ficha.ts";
 import { paginaGuia, paginaImovel, paginaPortfolio } from "../ferramentas/lib/interativo.ts";
 import { textosImovel } from "../ferramentas/lib/textos.ts";
 
@@ -8,6 +8,7 @@ const ficha = () =>
   esquemaFicha.parse({
     versao: 1, slug: "casa-itagua", nome: "Casa no Itaguá", endereco: "Rua das Flores, 123, Itaguá, Ubatuba", regiao: "Itaguá · Ubatuba",
     local: { lat: -23.4339, lon: -45.0712 },
+    area: sortearArea({ lat: -23.4339, lon: -45.0712 }, 250),
     pontos: [
       { id: "a", nome: "Praia do Itaguá", tipo: "praia", lat: -23.435, lon: -45.07, ape: { metros: 300, minutos: 4 }, noVideo: true },
       { id: "b", nome: "Mercado Bom Preço", tipo: "mercado", lat: -23.432, lon: -45.072, ape: { metros: 600, minutos: 8 }, noVideo: true },

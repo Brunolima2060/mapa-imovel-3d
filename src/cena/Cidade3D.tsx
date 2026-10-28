@@ -1,6 +1,7 @@
 import { ThreeCanvas } from "@remotion/three";
 import { useThree } from "@react-three/fiber";
 import { useLayoutEffect, useMemo } from "react";
+import { cancelRender } from "remotion";
 import {
   CatmullRomCurve3, Color, CylinderGeometry, DoubleSide, Fog, PerspectiveCamera,
   RingGeometry, ShaderMaterial, TubeGeometry, Vector3, type DirectionalLight,
@@ -170,7 +171,18 @@ export const Cidade3D: React.FC<Props & { rota?: { pts: [number, number][]; prog
   const temMar = useMemo(() => dados.relevo.y.some((v) => v < 0), [dados]);
   const R = raioDisco(dados);
   return (
-    <ThreeCanvas width={largura} height={altura} shadows gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }} style={{ position: "absolute", inset: 0 }}>
+    <ThreeCanvas
+      width={largura}
+      height={altura}
+      shadows
+      gl={{ antialias: true, preserveDrawingBuffer: true, alpha: true }}
+      style={{ position: "absolute", inset: 0 }}
+      onCreated={({ gl }) => {
+        // Sem memória de vídeo o WebGL falha calado e o quadro sai sem a maquete: melhor parar e tentar de novo.
+        gl.debug.onShaderError = () => cancelRender(new Error("WebGL falhou (memória de vídeo)"));
+        gl.domElement.addEventListener("webglcontextlost", () => cancelRender(new Error("WebGL falhou (contexto perdido)")));
+      }}
+    >
       <Camera q={quadro} aspecto={largura / altura} />
       <hemisphereLight args={["#FFF4E4", "#9C8B74", 0.75]} />
       <ambientLight intensity={0.12} />

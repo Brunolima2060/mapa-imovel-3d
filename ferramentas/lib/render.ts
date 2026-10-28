@@ -51,9 +51,28 @@ export const fecharNavegador = async () => {
   navegador = null;
 };
 
+// Falha de WebGL/Chrome por falta de memória: fecha o Chrome, espera e tenta de novo (até 3 vezes).
+const FALHA_NAVEGADOR = /WebGL|Target closed|context|Timed out|timeout/i;
+const comNovaTentativa = async <T>(fazer: () => Promise<T>): Promise<T> => {
+  for (let t = 1; ; t++) {
+    try {
+      return await fazer();
+    } catch (e) {
+      const msg = String((e as Error).message ?? e);
+      if (t >= 3 || !FALHA_NAVEGADOR.test(msg)) throw e;
+      console.log(`  (o Chrome falhou: ${msg.split(/\r?\n/)[0].slice(0, 90)}; tentando de novo com memória limpa...)`);
+      await fecharNavegador();
+      await new Promise((r) => setTimeout(r, 6000));
+    }
+  }
+};
+
 type Pedido = { publico: string; composicao: string; props: Record<string, unknown>; saida: string; rascunho?: boolean; quadro?: number };
 
-export const renderizarVideo = async ({ publico, composicao, props, saida, rascunho }: Pedido) => {
+export const renderizarVideo = (p: Pedido) => comNovaTentativa(() => renderizarVideo1(p));
+export const renderizarImagem = (p: Pedido) => comNovaTentativa(() => renderizarImagem1(p));
+
+const renderizarVideo1 = async ({ publico, composicao, props, saida, rascunho }: Pedido) => {
   const serveUrl = await pacote(publico);
   const nav = await opcoesNavegador();
   const comp = await selectComposition({ serveUrl, id: composicao, inputProps: props, ...nav });
@@ -80,7 +99,7 @@ export const renderizarVideo = async ({ publico, composicao, props, saida, rascu
   return saida;
 };
 
-export const renderizarImagem = async ({ publico, composicao, props, saida, quadro }: Pedido) => {
+const renderizarImagem1 = async ({ publico, composicao, props, saida, quadro }: Pedido) => {
   const serveUrl = await pacote(publico);
   const nav = await opcoesNavegador();
   const comp = await selectComposition({ serveUrl, id: composicao, inputProps: props, ...nav });

@@ -4,6 +4,7 @@
 import type { FichaPublica, Planta } from "../ficha.ts";
 import { limitesPlanta, montarPlanta, rotuloArea } from "./geometria.ts";
 
+const json = (v: unknown) => JSON.stringify(v).replace(/</g, "\\u003c").replace(/>/g, "\\u003e").replace(/&/g, "\\u0026");
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export const plantaHtml = (planta: Planta, ficha: Pick<FichaPublica, "nome" | "marca" | "regiao">): string => {
@@ -39,16 +40,17 @@ export const plantaHtml = (planta: Planta, ficha: Pick<FichaPublica, "nome" | "m
 <main><svg id="p" viewBox="${vb}" xmlns="http://www.w3.org/2000/svg"></svg></main>
 <footer><button id="b">Desmontar</button><span id="info">Toque num cômodo</span><div class="marca">Planta ilustrativa, fora de escala exata</div></footer>
 <script>
-const N = ${JSON.stringify(dados)};
-const C = ${JSON.stringify(comodos)};
+const N = ${json(dados)};
+const C = ${json(comodos)};
+const e = (t) => String(t).replace(/[&<>"']/g, (c) => "&#" + c.charCodeAt(0) + ";");
 const svg = document.getElementById("p"), info = document.getElementById("info"), btn = document.getElementById("b");
 let nivel = 0, alvo = 0, sel = "";
 function desenhar() {
   const fs = N[Math.round(nivel)];
   let h = "", r = "";
   for (const [pts, cor, com, op, rot] of fs) {
-    h += '<polygon data-c="' + com + '" points="' + pts.map(p => p.join(",")).join(" ") + '" fill="' + cor + '" opacity="' + op + '"' + (com && com === sel ? ' class="sel"' : "") + '/>';
-    if (rot && nivel > 6) r += '<text x="' + rot[0] + '" y="' + rot[1] + '" font-size=".32">' + com + '</text><text x="' + rot[0] + '" y="' + (rot[1] + .34) + '" font-size=".24" fill="#5B6664">' + C[com].area + '</text>';
+    h += '<polygon data-c="' + e(com) + '" points="' + pts.map(p => p.join(",")).join(" ") + '" fill="' + cor + '" opacity="' + op + '"' + (com && com === sel ? ' class="sel"' : "") + '/>';
+    if (rot && nivel > 6) r += '<text x="' + rot[0] + '" y="' + rot[1] + '" font-size=".32">' + e(com) + '</text><text x="' + rot[0] + '" y="' + (rot[1] + .34) + '" font-size=".24" fill="#5B6664">' + C[com].area + '</text>';
   }
   svg.innerHTML = h + '<g class="rot">' + r + '</g>';
 }

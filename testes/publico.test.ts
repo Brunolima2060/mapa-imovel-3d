@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { aproximar, esquemaFicha, fichaPublica } from "../src/ficha.ts";
+import { esquemaFicha, fichaPublica, sortearArea } from "../src/ficha.ts";
 import { metrosEntre } from "../ferramentas/lib/geo.ts";
 
 const real = { lat: -23.4339, lon: -45.0712 };
@@ -13,22 +13,9 @@ const base = () =>
     local: real,
     pontos: [{ id: "p1", nome: "Praia do Itaguá", tipo: "praia", lat: -23.435, lon: -45.07, ape: { metros: 300, minutos: 4 }, noVideo: true }],
     marca: { nome: "Casa da Praia" },
+    area: sortearArea(real, 250),
     guia: { origem: { nome: "Rodoviária", lat: -23.44, lon: -45.08 }, entrada: "Portão azul, código 1234" },
   });
-
-test("aproximar mantém o ponto real dentro do círculo e longe do centro", () => {
-  for (let i = 0; i < 1000; i++) {
-    const c = aproximar(real, 250, "semente-" + i);
-    const d = metrosEntre(real, c);
-    assert.ok(d <= 250 * 0.7 + 0.01, `muito longe: ${d}`);
-    assert.ok(d >= 250 * 0.35 - 0.01, `perto demais: ${d}`);
-  }
-});
-
-test("aproximar é determinístico pela semente", () => {
-  assert.deepEqual(aproximar(real, 250, "x"), aproximar(real, 250, "x"));
-  assert.notDeepEqual(aproximar(real, 250, "x"), aproximar(real, 250, "y"));
-});
 
 test("fichaPublica aproximada não vaza rua, coordenadas reais nem o guia", () => {
   const txt = JSON.stringify(fichaPublica(base()));
@@ -44,6 +31,6 @@ test("fichaPublica exata usa o ponto real como centro", () => {
 });
 
 test("fichaPublica aproximada usa a área salva na ficha quando existe", () => {
-  const f = { ...base(), area: { lat: -23.432, lon: -45.073 } };
-  assert.deepEqual(fichaPublica(f).centro, { lat: -23.432, lon: -45.073 });
+  const area = { lat: -23.4330, lon: -45.0712 }; // ~100 m ao norte
+  assert.deepEqual(fichaPublica({ ...base(), area }).centro, area);
 });

@@ -31,7 +31,7 @@ const vez = async (host: string) => {
   await minha;
 };
 
-type Opcoes = { cacheDir: string; metodo?: "GET" | "POST"; corpo?: string; tipo?: "json" | "binario"; cabecalhos?: Record<string, string>; novasTentativas?: number; tempoLimite?: number };
+type Opcoes = { cacheDir: string; metodo?: "GET" | "POST"; corpo?: string; tipo?: "json" | "binario"; cabecalhos?: Record<string, string>; novasTentativas?: number; tempoLimite?: number; aceitarStatus?: number[] };
 
 export async function buscar(url: string, o: Opcoes & { tipo: "binario" }): Promise<Buffer>;
 export async function buscar(url: string, o: Opcoes): Promise<any>;
@@ -76,6 +76,8 @@ export async function buscar(url: string, o: Opcoes): Promise<any> {
       fs.writeFileSync(arq, b);
       return tipo === "json" ? JSON.parse(b.toString("utf8")) : b;
     }
+    // alguns serviços respondem "não há" com erro (ex.: OSRM 400 NoRoute): isso é resposta, não falha
+    if (o.aceitarStatus?.includes(r.status) && tipo === "json") return JSON.parse(Buffer.from(await r.arrayBuffer()).toString("utf8"));
     ultimoErro = String(r.status);
     if (r.status !== 429 && r.status < 500) break;
   }

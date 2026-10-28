@@ -15,7 +15,8 @@ import { plantaHtml } from "../src/planta/svg.ts";
 import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pastaPublico, pastaSaida, salvarFicha } from "./lib/pastas.ts";
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
 import { fecharNavegador, renderizarImagem, renderizarVideo } from "./lib/render.ts";
-import { aproximar, fichaPublica, type Ficha } from "../src/ficha.ts";
+import { fichaPublica, sortearArea, type Ficha } from "../src/ficha.ts";
+import { escolherUrlVercel, mesmaOrigem, nomePadrao } from "./lib/utilidades.ts";
 import { rotuloTempo } from "../src/tempo.ts";
 
 type Args = { pos: string[]; op: Record<string, string | true> };
@@ -33,7 +34,11 @@ const lerArgs = (lista: string[]): Args => {
 };
 const texto = (v: string | true | undefined) => (typeof v === "string" ? v : undefined);
 const exigirDados = (slug: string) => {
-  if (!fs.existsSync(path.join(pastaPublico(slug), "cidade.json"))) throw new Error(`Falta a maquete de "${slug}". Rode: dados ${slug}`);
+  const arq = path.join(pastaPublico(slug), "cidade.json");
+  if (!fs.existsSync(arq)) throw new Error(`Falta a maquete de "${slug}". Rode: dados ${slug}`);
+  const origem = JSON.parse(fs.readFileSync(arq, "utf8")).origem;
+  // maquete feita para outro centro (endereço, raio ou modo mudou): o círculo cairia no lugar errado
+  if (!mesmaOrigem(origem, fichaPublica(carregarFicha(slug)).centro)) throw new Error(`A maquete de "${slug}" é de antes de uma mudança na ficha. Rode de novo: dados ${slug}`);
 };
 const exigirSlug = (pos: string[]) => {
   if (!pos[0]) throw new Error("Diga qual imóvel (o slug, nome da pasta em mapas-imoveis).");
@@ -59,8 +64,9 @@ const publicarNaVercel = (dir: string, nomeProjeto: string): string => {
   if (teste.status !== 0) {
     throw new Error("Falta a ferramenta da Vercel. Instale uma vez com:  npm i -g vercel   e depois entre na sua conta com:  vercel login");
   }
-  fs.writeFileSync(path.join(dir, "vercel.json"), JSON.stringify({ cleanUrls: true }));
-  const r = spawnSync(cmd, ["deploy", dir, "--prod", "--yes", "--name", nomeProjeto], { encoding: "utf8", shell: process.platform === "win32" });
+  // nome do projeto vai num vercel.json (o --name está obsoleto) e o comando roda dentro da pasta: caminho com espaço não quebra
+  fs.writeFileSync(path.join(dir, "vercel.json"), JSON.stringify({ name: nomeProjeto, cleanUrls: true }));
+  const r = spawnSync(cmd, ["deploy", "--prod", "--yes"], { cwd: dir, encoding: "utf8", shell: process.platform === "win32" });
   const saida = `${r.stdout}\n${r.stderr}`;
   if (r.status !== 0) {
     if (/log ?in|not authorized|credentials|token/i.test(saida)) throw new Error("Entre na sua conta da Vercel uma vez com:  vercel login");
@@ -79,15 +85,19 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
   async novo({ pos, op }) {
     const entrada = pos[0];
     if (!entrada) throw new Error('Uso: novo "<endereço, coordenadas ou link do Google Maps>" [--nome "Apê da praia"] [--exata]');
-    const nome = texto(op.nome) ?? entrada.split(",")[0].trim();
-    const slug = texto(op.slug) ?? criarSlug(nome);
+    const nomeDado = texto(op.nome);
+    const slugDado = texto(op.slug) ? criarSlug(texto(op.slug)!) : nomeDado ? criarSlug(nomeDado) : undefined;
+    if (!slugDado) throw new Error('Dê um nome curto ao imóvel (ele aparece no vídeo e no link), ex.: --nome "Casa no Itaguá"');
+    const slug = slugDado;
     if (fs.existsSync(path.join(pastaImovel(slug), "ficha.json")) && !op.refazer) {
       throw new Error(`Já existe o imóvel "${slug}". Use --slug outro-nome ou --refazer para recomeçar.`);
     }
+    if (op.refazer) for (const a of ["cidade.json", "cidade-exata.json"]) fs.rmSync(path.join(pastaPublico(slug), a), { force: true });
     const cache = pastaCache(slug);
     console.log(`Procurando "${entrada}"...`);
     const lugar = await geocodificar(entrada, cache);
     console.log(`Achei: ${lugar.nomeExibicao}`);
+    console.log("  (confira se é o lugar certo; se não for, rode de novo com cidade e estado ou com as coordenadas)");
     console.log("Procurando o que tem em volta (OpenStreetMap)...");
     const pontos = await buscarPontos(lugar, cache);
     console.log(`Calculando tempo a pé e de carro até ${pontos.length} pontos...`);
@@ -96,21 +106,29 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     const ficha: Ficha = {
       versao: 1,
       slug,
-      nome,
+      nome: nomeDado ?? nomePadrao(lugar.regiao?.split(" · ")[0]),
       chamada: "Reserve agora",
       regiao: lugar.regiao,
       endereco: lugar.nomeExibicao,
       local: { lat: lugar.lat, lon: lugar.lon },
       localizacao: op.exata ? "exata" : "aproximada",
       raioAproxM: raio,
-      area: aproximar(lugar, raio, slug),
+      area: sortearArea(lugar, raio),
       pontos: comTempo,
-      marca: { nome, cor: "#C8643C", corTexto: "#FFFFFF" },
+      marca: { nome: nomeDado ?? "Minha marca", cor: "#C8643C", corTexto: "#FFFFFF" },
     };
     salvarFicha(ficha);
     console.log(`\nFicha criada: ${path.join(pastaImovel(slug), "ficha.json")}`);
     console.log(`Localização: ${ficha.localizacao}${ficha.localizacao === "aproximada" ? ` (círculo de ${raio} m)` : ""}`);
     console.log(`Pontos (★ = entra no vídeo):\n${resumoPontos(ficha)}`);
+  },
+
+  // Sorteia de novo o círculo aproximado (ex.: depois de mudar raioAproxM). Depois, rode "dados" de novo.
+  async area({ pos }) {
+    const f = carregarFicha(exigirSlug(pos));
+    f.area = sortearArea(f.local, f.raioAproxM);
+    salvarFicha(f);
+    console.log(`Área sorteada de novo (raio ${f.raioAproxM} m). Agora rode: dados ${f.slug}`);
   },
 
   async tempos({ pos }) {
@@ -207,7 +225,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     console.log(`Pronto: ${html}`);
     if (op["sem-video"]) return;
     const exato = path.join(pastaPublico(f.slug), "cidade-exata.json");
-    if (!fs.existsSync(exato)) {
+    if (!fs.existsSync(exato) || !mesmaOrigem(JSON.parse(fs.readFileSync(exato, "utf8")).origem, f.local)) {
       console.log("Montando a maquete com o endereço exato (só para o guia)...");
       const d = await gerarCidade(f.local, [], cache, f.slug + "-exato");
       fs.writeFileSync(exato, JSON.stringify(d));
@@ -278,7 +296,11 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
 
   async tudo({ pos }) {
     const slug = exigirSlug(pos);
-    if (!fs.existsSync(path.join(pastaPublico(slug), "cidade.json"))) await comandos.dados({ pos: [slug], op: {} });
+    try {
+      exigirDados(slug);
+    } catch {
+      await comandos.dados({ pos: [slug], op: {} });
+    }
     await comandos.video({ pos: [slug], op: { final: true } });
     await comandos.capa({ pos: [slug], op: {} });
     if (carregarFicha(slug).planta?.comodos.length) await comandos.planta({ pos: [slug], op: {} });
