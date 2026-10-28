@@ -37,7 +37,9 @@ export const fichaPdfHtml = (f: FichaPublica, img: Imagens): string => {
   h2 { font-size: 10.5pt; margin: 0 0 1.5mm; color: ${cor}; letter-spacing: .12em; text-transform: uppercase; }
   ul { margin: 0; padding: 0; list-style: none; font-size: 8.6pt; line-height: 1.35; }
   li { display: flex; justify-content: space-between; gap: 3mm; border-bottom: .2mm solid #E6E0D6; padding: .45mm 0; }
-  li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  li b { flex-shrink: 0; }
+  .grade > div { min-width: 0; }
   li b { white-space: nowrap; color: ${cor}; }
   .galpao { position: absolute; left: 12mm; right: 12mm; bottom: 31mm; height: 50mm; text-align: center; }
   .galpao img { height: 100%; max-width: 100%; object-fit: contain; }
