@@ -9,7 +9,7 @@ const FPS = 30;
 
 // Props de exemplo só para o Remotion Studio abrir; a CLI sempre passa a ficha do imóvel.
 const exemplo: FichaPublica = {
-  versao: 1, slug: "exemplo", nome: "Imóvel de exemplo", chamada: "Reserve agora", localizacao: "aproximada", raioAproxM: 250,
+  versao: 1, perfil: "residencial", slug: "exemplo", nome: "Imóvel de exemplo", chamada: "Reserve agora", localizacao: "aproximada", raioAproxM: 250,
   centro: { lat: 0, lon: 0 }, pontos: [], marca: { nome: "Sua marca", cor: "#C8643C", corTexto: "#FFFFFF" },
 };
 const guiaExemplo: PropsGuia = { nome: "Imóvel de exemplo", marca: exemplo.marca, origem: "Rodoviária", rota: [] };

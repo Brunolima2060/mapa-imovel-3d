@@ -11,7 +11,8 @@ import { calcularTrechos, rotaCompleta } from "./lib/rotas.ts";
 import { paginaGuia, paginaImovel, paginaPortfolio } from "./lib/interativo.ts";
 import { textosImovel } from "./lib/textos.ts";
 import { qrPng } from "./lib/qr.ts";
-import { plantaHtml } from "../src/planta/svg.ts";
+import { galpaoHtml, plantaHtml } from "../src/planta/svg.ts";
+import { buscarPontosLogisticos } from "./lib/logistica.ts";
 import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pastaPublico, pastaSaida, salvarFicha } from "./lib/pastas.ts";
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
 import { fecharNavegador, renderizarImagem, renderizarVideo } from "./lib/render.ts";
@@ -98,16 +99,18 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     const lugar = await geocodificar(entrada, cache);
     console.log(`Achei: ${lugar.nomeExibicao}`);
     console.log("  (confira se é o lugar certo; se não for, rode de novo com cidade e estado ou com as coordenadas)");
-    console.log("Procurando o que tem em volta (OpenStreetMap)...");
-    const pontos = await buscarPontos(lugar, cache);
-    console.log(`Calculando tempo a pé e de carro até ${pontos.length} pontos...`);
-    const comTempo = await calcularTrechos(lugar, pontos, cache);
+    const galpao = !!op.galpao;
+    console.log(galpao ? "Procurando rodovias, aeroporto e centro (OpenStreetMap)..." : "Procurando o que tem em volta (OpenStreetMap)...");
+    const pontos = galpao ? await buscarPontosLogisticos(lugar, cache) : await buscarPontos(lugar, cache);
+    console.log(`Calculando ${galpao ? "distância e tempo de carro" : "tempo a pé e de carro"} até ${pontos.length} pontos...`);
+    const comTempo = await calcularTrechos(lugar, pontos, cache, galpao);
     const raio = 250;
     const ficha: Ficha = {
       versao: 1,
+      perfil: galpao ? "galpao" : "residencial",
       slug,
       nome: nomeDado ?? nomePadrao(lugar.regiao?.split(" · ")[0]),
-      chamada: "Reserve agora",
+      chamada: galpao ? "Agende uma visita" : "Reserve agora",
       regiao: lugar.regiao,
       endereco: lugar.nomeExibicao,
       local: { lat: lugar.lat, lon: lugar.lon },
@@ -121,6 +124,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     console.log(`\nFicha criada: ${path.join(pastaImovel(slug), "ficha.json")}`);
     console.log(`Localização: ${ficha.localizacao}${ficha.localizacao === "aproximada" ? ` (círculo de ${raio} m)` : ""}`);
     console.log(`Pontos (★ = entra no vídeo):\n${resumoPontos(ficha)}`);
+    if (galpao) console.log('\nAgora preencha a ficha técnica em "galpao" (área, pé-direito, docas...): veja referencias/ficha.md');
   },
 
   // Sorteia de novo o círculo aproximado (ex.: depois de mudar raioAproxM). Depois, rode "dados" de novo.
@@ -134,7 +138,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
   async tempos({ pos }) {
     const f = carregarFicha(exigirSlug(pos));
     console.log(`Recalculando tempos de ${f.pontos.length} pontos...`);
-    f.pontos = await calcularTrechos(f.local, f.pontos.map(({ ape: _a, carro: _c, ...p }) => p), pastaCache(f.slug));
+    f.pontos = await calcularTrechos(f.local, f.pontos.map(({ ape: _a, carro: _c, ...p }) => p), pastaCache(f.slug), f.perfil === "galpao");
     salvarFicha(f);
     console.log(resumoPontos(f));
   },
@@ -191,9 +195,14 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
 
   async planta({ pos }) {
     const f = carregarFicha(exigirSlug(pos));
-    if (!f.planta?.comodos.length) throw new Error('Esta ficha ainda não tem planta. Preencha "planta.comodos" (veja referencias/ficha.md).');
     const html = path.join(pastaSaida(f.slug), "planta.html");
-    fs.writeFileSync(html, plantaHtml(f.planta, fichaPublica(f)));
+    if (f.perfil === "galpao") {
+      if (!f.galpao) throw new Error('Esta ficha ainda não tem a ficha técnica. Preencha "galpao" (veja referencias/ficha.md).');
+      fs.writeFileSync(html, galpaoHtml(f.galpao, fichaPublica(f)));
+    } else {
+      if (!f.planta?.comodos.length) throw new Error('Esta ficha ainda não tem planta. Preencha "planta.comodos" (veja referencias/ficha.md).');
+      fs.writeFileSync(html, plantaHtml(f.planta, fichaPublica(f)));
+    }
     const png = path.join(pastaSaida(f.slug), "planta.png");
     await renderizarImagem({ publico: pastaPublico(f.slug), composicao: "Planta", props: { ficha: fichaPublica(f) }, saida: png });
     console.log(`Pronto: ${png}\nPronto: ${html}`);
@@ -287,11 +296,12 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     const dir = path.join(pastaSaida(f.slug), "site-mapa");
     fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(path.join(dir, "index.html"), paginaImovel(fichaPublica(f)));
-    if (f.planta?.comodos.length) fs.writeFileSync(path.join(dir, "planta.html"), plantaHtml(f.planta, fichaPublica(f)));
+    if (f.perfil === "galpao" && f.galpao) fs.writeFileSync(path.join(dir, "planta.html"), galpaoHtml(f.galpao, fichaPublica(f)));
+    else if (f.planta?.comodos.length) fs.writeFileSync(path.join(dir, "planta.html"), plantaHtml(f.planta, fichaPublica(f)));
     const url = publicarNaVercel(dir, `mapa-${f.slug}`);
     f.anuncio = { ...f.anuncio, mapaUrl: url };
     salvarFicha(f);
-    console.log(`No ar: ${url}${f.planta?.comodos.length ? `\nPlanta: ${url}/planta.html` : ""}`);
+    console.log(`No ar: ${url}${f.planta?.comodos.length || f.galpao ? `\nPlanta: ${url}/planta.html` : ""}`);
   },
 
   async tudo({ pos }) {
@@ -303,7 +313,8 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     }
     await comandos.video({ pos: [slug], op: { final: true } });
     await comandos.capa({ pos: [slug], op: {} });
-    if (carregarFicha(slug).planta?.comodos.length) await comandos.planta({ pos: [slug], op: {} });
+    const fx = carregarFicha(slug);
+    if (fx.planta?.comodos.length || (fx.perfil === "galpao" && fx.galpao)) await comandos.planta({ pos: [slug], op: {} });
     await comandos.interativo({ pos: [slug], op: {} });
     await comandos.textos({ pos: [slug], op: {} });
     console.log(`\nTudo pronto em ${pastaSaida(slug)}`);
@@ -311,7 +322,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
 
   async ajuda() {
     console.log(`mapa-imovel-3d — comandos (node ferramentas/mapa.ts <comando> ...)
-  novo "<endereço|coordenadas|link>" [--nome "..."] [--slug x] [--exata]   cria a ficha do imóvel
+  novo "<endereço|coordenadas|link>" --nome "..." [--galpao] [--exata]   cria a ficha (--galpao: comercial/logística)
   tempos <slug>                    recalcula tempos depois de mexer nos pontos
   dados <slug>                     baixa relevo, prédios e ruas (maquete 3D)
   quadro <slug> <n> [<n>...]       quadros soltos do vídeo em PNG, para conferir

@@ -1,7 +1,8 @@
 import { interpolate } from "remotion";
-import type { Planta } from "../ficha.ts";
+import type { FichaGalpao, Planta } from "../ficha.ts";
 import { ESTILO, FONTE } from "../cena/estilo.ts";
 import { limitesPlanta, montarPlanta, type Face } from "./geometria.ts";
+import { linhasFichaTecnica, montarGalpao } from "./galpao.ts";
 
 const contorno = "rgba(70, 58, 44, 0.55)";
 
@@ -50,6 +51,33 @@ export const PlantaAnimada: React.FC<{ planta: Planta; cor: string; largura: num
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: (vertical ? 420 : 200) * s, bottom: (vertical ? 380 : 60) * s }}>
         <DesenhoPlanta faces={faces} largura={largura} altura={altura - (vertical ? 800 : 260) * s} margem={0.03} rotulos={rot} escalaTexto={vertical ? 1 : 0.9} />
+      </div>
+    </div>
+  );
+};
+
+// Cena do galpão: telhado sobe e a ficha técnica aparece ao lado (deitado) ou embaixo (em pé).
+export const GalpaoAnimado: React.FC<{ galpao: FichaGalpao; cor: string; largura: number; altura: number; quadro: number; duracao: number }> = ({ galpao, cor, largura, altura, quadro, duracao }) => {
+  const e = interpolate(quadro, [duracao * 0.12, duracao * 0.55], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: (t) => (1 - Math.cos(Math.PI * t)) / 2 });
+  const vis = interpolate(quadro, [duracao * 0.35, duracao * 0.6], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
+  const vertical = altura > largura;
+  const s = Math.min(largura, altura) / 1080;
+  const linhas = linhasFichaTecnica(galpao).slice(0, 7);
+  const larguraDesenho = vertical ? largura : largura * 0.62;
+  const alturaDesenho = vertical ? altura * 0.42 : altura * 0.8;
+  return (
+    <div style={{ position: "absolute", inset: 0, background: "rgba(242, 232, 218, 0.84)", fontFamily: FONTE }}>
+      <div style={{ position: "absolute", top: (vertical ? 250 : 60) * s, left: 0, right: 0, textAlign: "center", fontSize: 30 * s, letterSpacing: 6 * s, textTransform: "uppercase", color: cor, fontWeight: 700 }}>Ficha técnica</div>
+      <div style={{ position: "absolute", left: 0, top: (vertical ? 330 : 120) * s, width: larguraDesenho, height: alturaDesenho }}>
+        <DesenhoPlanta faces={montarGalpao(galpao, { explosao: e, cor })} largura={larguraDesenho} altura={alturaDesenho} margem={0.04} rotulos={0} />
+      </div>
+      <div style={{ position: "absolute", opacity: vis, transform: `translateY(${(1 - vis) * 24 * s}px)`, ...(vertical ? { left: 70 * s, right: 70 * s, top: 330 * s + alturaDesenho + 20 * s } : { right: 70 * s, top: 200 * s, width: largura * 0.32 }), display: "flex", flexDirection: "column", gap: 14 * s }}>
+        {linhas.map((l) => (
+          <div key={l} style={{ display: "flex", alignItems: "center", gap: 16 * s, fontSize: 38 * s, fontWeight: 700, color: ESTILO.texto }}>
+            <span style={{ width: 14 * s, height: 14 * s, borderRadius: 4 * s, background: cor, flexShrink: 0 }} />
+            {l}
+          </div>
+        ))}
       </div>
     </div>
   );

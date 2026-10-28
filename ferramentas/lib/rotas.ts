@@ -29,10 +29,10 @@ export const rotaCompleta = async (a: LatLon, b: LatLon, cacheDir: string) => {
   };
 };
 
-export const calcularTrechos = async (local: LatLon, pontos: Ponto[], cacheDir: string): Promise<Ponto[]> => {
+export const calcularTrechos = async (local: LatLon, pontos: Ponto[], cacheDir: string, somenteCarro = false): Promise<Ponto[]> => {
   const saida: Ponto[] = [];
   for (const p of pontos) {
-    let ape = await trecho(local, p, "foot", cacheDir);
+    let ape = somenteCarro ? undefined : await trecho(local, p, "foot", cacheDir);
     const reta = metrosEntre(local, p);
     if (ape && trechoSuspeito(reta, ape)) {
       const DESVIO = 30;

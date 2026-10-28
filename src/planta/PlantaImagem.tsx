@@ -3,6 +3,7 @@ import { loadFont } from "@remotion/google-fonts/DMSans";
 import type { FichaPublica } from "../ficha.ts";
 import { ESTILO, FONTE } from "../cena/estilo.ts";
 import { montarPlanta } from "./geometria.ts";
+import { linhasFichaTecnica, montarGalpao } from "./galpao.ts";
 import { DesenhoPlanta } from "./PlantaSvg.tsx";
 
 loadFont("normal", { weights: ["500", "700"], subsets: ["latin", "latin-ext"] });
@@ -11,6 +12,22 @@ loadFont("normal", { weights: ["500", "700"], subsets: ["latin", "latin-ext"] })
 export const PlantaImagem: React.FC<{ ficha: FichaPublica }> = ({ ficha }) => {
   const { width, height } = useVideoConfig();
   const s = Math.min(width, height) / 1080;
+  if (ficha.perfil === "galpao" && ficha.galpao) {
+    const g = ficha.galpao;
+    return (
+      <AbsoluteFill style={{ background: `linear-gradient(180deg, #EEF2F1 0%, ${ESTILO.ceuBase} 100%)`, fontFamily: FONTE }}>
+        <div style={{ position: "absolute", top: 50 * s, left: 70 * s }}>
+          <div style={{ fontSize: 24 * s, letterSpacing: 5 * s, textTransform: "uppercase", color: ficha.marca.cor, fontWeight: 700 }}>{ficha.marca.nome}</div>
+          <div style={{ fontSize: 50 * s, fontWeight: 700, color: ESTILO.texto, marginTop: 6 * s }}>{ficha.nome}</div>
+          <div style={{ fontSize: 28 * s, color: ESTILO.textoSuave, marginTop: 6 * s, maxWidth: width * 0.9 }}>{linhasFichaTecnica(g).join(" · ")}</div>
+        </div>
+        <div style={{ position: "absolute", left: 0, right: 0, top: 210 * s, bottom: 30 * s }}>
+          <DesenhoPlanta faces={montarGalpao(g, { explosao: 1, cor: ficha.marca.cor })} largura={width} altura={height - 240 * s} margem={0.05} rotulos={0} />
+        </div>
+        <div style={{ position: "absolute", right: 40 * s, bottom: 26 * s, fontSize: 18 * s, color: ESTILO.textoSuave }}>Ilustração a partir da ficha técnica</div>
+      </AbsoluteFill>
+    );
+  }
   if (!ficha.planta?.comodos.length) return null;
   const area = ficha.planta.areaTotalM2 ?? ficha.planta.comodos.reduce((a, c) => a + c.w * c.h, 0);
   return (

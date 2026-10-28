@@ -19,11 +19,11 @@ export const latLonDoTile = (tx: number, ty: number, px: number, py: number, ext
   return { lon: (x / n) * 360 - 180, lat: (Math.atan(Math.sinh(Math.PI * (1 - (2 * y) / n))) * 180) / Math.PI };
 };
 
-export const tilesNoRaio = (centro: LatLon, raioM: number) => {
+export const tilesNoRaio = (centro: LatLon, raioM: number, z = ZOOM_TILE) => {
   const dLat = raioM / 110950;
   const dLon = raioM / (111320 * Math.cos((centro.lat * Math.PI) / 180));
-  const a = tileDe({ lat: centro.lat + dLat, lon: centro.lon - dLon });
-  const b = tileDe({ lat: centro.lat - dLat, lon: centro.lon + dLon });
+  const a = tileDe({ lat: centro.lat + dLat, lon: centro.lon - dLon }, z);
+  const b = tileDe({ lat: centro.lat - dLat, lon: centro.lon + dLon }, z);
   const lista: { x: number; y: number }[] = [];
   for (let x = Math.floor(a.x); x <= Math.floor(b.x); x++) for (let y = Math.floor(a.y); y <= Math.floor(b.y); y++) lista.push({ x, y });
   return lista;
@@ -38,11 +38,11 @@ const modeloUrl = async (cacheDir: string): Promise<string> => {
 
 export type Ladrilho = { x: number; y: number; camadas: Record<string, Camada> };
 
-export const baixarLadrilhos = async (centro: LatLon, raioM: number, cacheDir: string): Promise<Ladrilho[]> => {
+export const baixarLadrilhos = async (centro: LatLon, raioM: number, cacheDir: string, z = ZOOM_TILE): Promise<Ladrilho[]> => {
   const modelo = await modeloUrl(cacheDir);
   const saida: Ladrilho[] = [];
-  for (const t of tilesNoRaio(centro, raioM)) {
-    const url = modelo.replace("{z}", String(ZOOM_TILE)).replace("{x}", String(t.x)).replace("{y}", String(t.y));
+  for (const t of tilesNoRaio(centro, raioM, z)) {
+    const url = modelo.replace("{z}", String(z)).replace("{x}", String(t.x)).replace("{y}", String(t.y));
     const b = await buscar(url, { cacheDir, tipo: "binario" });
     saida.push({ ...t, camadas: lerTile(b) });
   }

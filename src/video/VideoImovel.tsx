@@ -8,7 +8,7 @@ import { Cidade3D, projetar, type MarcadorCena } from "../cena/Cidade3D.tsx";
 import { alturaEm, type DadosCidade } from "../cidade.ts";
 import { useDadosCidade } from "./dados.ts";
 import { Assinatura, CartaoPonto, Etiqueta, Fecho, Titulo, entrada, saida } from "./Interface.tsx";
-import { PlantaAnimada } from "../planta/PlantaSvg.tsx";
+import { GalpaoAnimado, PlantaAnimada } from "../planta/PlantaSvg.tsx";
 
 loadFont("normal", { weights: ["500", "600", "700"], subsets: ["latin", "latin-ext"] });
 
@@ -16,7 +16,7 @@ export type PropsVideo = { ficha: FichaPublica; comPlanta: boolean; fotos: strin
 
 export const pontosDoVideo = (f: FichaPublica) => f.pontos.filter((p) => p.noVideo);
 export const roteiroDe = (p: PropsVideo, fps: number): Roteiro =>
-  montarRoteiro({ nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && !!p.ficha.planta?.comodos.length, nFotos: p.fotos.length, fps });
+  montarRoteiro({ nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && (p.ficha.perfil === "galpao" ? !!p.ficha.galpao : !!p.ficha.planta?.comodos.length), nFotos: p.fotos.length, fps });
 
 const Ceu: React.FC = () => <AbsoluteFill style={{ background: `linear-gradient(180deg, ${ESTILO.ceuTopo} 0%, ${ESTILO.ceuBase} 62%)` }} />;
 
@@ -72,7 +72,7 @@ const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura
         const y = Math.max(0, alturaEm(dados.relevo, 0, 0)) + (ficha.localizacao === "aproximada" ? 95 : 165);
         const p = projetar(q, largura, altura, [0, y, 0]);
         const vis = entrada(local, 10) * saida(f, cena.ini + cena.dur, 8);
-        return p.visivel ? <Etiqueta x={p.x} y={p.y} texto={ficha.localizacao === "aproximada" ? "O imóvel fica nesta região" : "O imóvel fica aqui"} cor={ficha.marca.cor} vis={vis} escala={escala} destaque /> : null;
+        return p.visivel ? <Etiqueta x={p.x} y={p.y} texto={ficha.perfil === "galpao" ? (ficha.localizacao === "aproximada" ? "O galpão fica nesta região" : "O galpão fica aqui") : ficha.localizacao === "aproximada" ? "O imóvel fica nesta região" : "O imóvel fica aqui"} cor={ficha.marca.cor} vis={vis} escala={escala} destaque /> : null;
       })()}
 
       {cena.tipo === "ponto" && (() => {
@@ -89,7 +89,13 @@ const Video: React.FC<PropsVideo & { dados: DadosCidade; largura: number; altura
         );
       })()}
 
-      {cena.tipo === "planta" && ficha.planta && (
+      {cena.tipo === "planta" && ficha.perfil === "galpao" && ficha.galpao && (
+        <AbsoluteFill style={{ opacity: entrada(local, 0, 10) * saida(f, cena.ini + cena.dur, 10) }}>
+          <GalpaoAnimado galpao={ficha.galpao} cor={ficha.marca.cor} largura={largura} altura={altura} quadro={local} duracao={cena.dur} />
+        </AbsoluteFill>
+      )}
+
+      {cena.tipo === "planta" && ficha.perfil !== "galpao" && ficha.planta && (
         <AbsoluteFill style={{ opacity: entrada(local, 0, 10) * saida(f, cena.ini + cena.dur, 10) }}>
           <PlantaAnimada planta={ficha.planta} cor={ficha.marca.cor} largura={largura} altura={altura} quadro={local} duracao={cena.dur} titulo="Por dentro" />
         </AbsoluteFill>

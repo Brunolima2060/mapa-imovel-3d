@@ -19,10 +19,12 @@ Fonte única de tudo. Criada pelo comando `novo`; edite à vontade (JSON). Campo
 | `anuncio` | sim | `link`, `plataforma` ("Airbnb"), `mapaUrl` (preenchido pelo `publicar`) |
 | `planta` | sim | `comodos[]`, `moveis[]`, `areaTotalM2` (opcional) |
 | `fotos[]` | sim | arquivos em `publico/`, ex. `"fotos/sala.jpg"` (até 4 no vídeo) |
+| `perfil` | sim | `"residencial"` (padrão) ou `"galpao"` |
+| `galpao` | sim | ficha técnica do galpão (abaixo) |
 | `guia` | **não** | `origem`, `rota`, `minutos`, `metros`, `entrada`, `estacionamento`, `observacoes`, `url` |
 
 Tipos de ponto: `praia`, `metro`, `trem`, `onibus`, `rodoviaria`, `aeroporto`, `mercado`, `padaria`, `farmacia`,
-`hospital`, `restaurante`, `parque`, `shopping`, `atracao`, `outro`.
+`hospital`, `restaurante`, `parque`, `shopping`, `atracao`, `rodovia`, `porto`, `centro`, `outro`.
 
 ## Planta
 
@@ -59,3 +61,19 @@ Exemplo (apartamento de 2 quartos, 61 m²):
 
 Lendo a foto de uma planta: some as cotas de cada lado, arredonde para 0,1 m e confira se a soma das larguras
 de uma fileira de cômodos bate com a largura total. Se a planta tiver formato de "L", use vários retângulos.
+
+## Galpão (`"perfil": "galpao"`)
+
+```json
+"galpao": {
+  "areaConstruidaM2": 6200, "areaTerrenoM2": 11000,
+  "larguraM": 50, "comprimentoM": 124,
+  "peDireitoM": 12, "docas": 10, "niveladoras": 6,
+  "pisoTm2": 6, "energiaKva": 500, "sprinklers": true,
+  "escritorioM2": 350, "patio": "Pátio para carretas", "modulos": 2,
+  "extras": ["Portaria 24h", "Cabine primária"]
+}
+```
+
+Obrigatórios: `areaConstruidaM2`, `peDireitoM`, `docas`. Sem `larguraM`/`comprimentoM`, o desenho assume uma
+nave 2 por 1 com a área informada (é ilustração, não planta técnica).

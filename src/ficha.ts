@@ -9,7 +9,7 @@ const trecho = z.object({ metros: z.number().nonnegative(), minutos: z.number().
 
 export const TIPOS_PONTO = [
   "praia", "metro", "trem", "onibus", "mercado", "padaria", "farmacia", "hospital", "restaurante",
-  "parque", "shopping", "atracao", "aeroporto", "rodoviaria", "outro",
+  "parque", "shopping", "atracao", "aeroporto", "rodoviaria", "rodovia", "porto", "centro", "outro",
 ] as const;
 
 const ponto = latLon.extend({
@@ -42,8 +42,28 @@ const movel = z.object({
   giro: z.union([z.literal(0), z.literal(90), z.literal(180), z.literal(270)]).optional(),
 });
 
+// Ficha técnica de galpão comercial / logístico (perfil "galpao").
+const fichaGalpao = z.object({
+  areaConstruidaM2: z.number().positive(),
+  areaTerrenoM2: z.number().positive().optional(),
+  larguraM: z.number().positive().optional(),
+  comprimentoM: z.number().positive().optional(),
+  peDireitoM: z.number().positive(),
+  docas: z.number().int().nonnegative(),
+  niveladoras: z.number().int().nonnegative().optional(),
+  pisoTm2: z.number().positive().optional(),
+  energiaKva: z.number().positive().optional(),
+  sprinklers: z.boolean().optional(),
+  escritorioM2: z.number().nonnegative().optional(),
+  patio: z.string().optional(), // ex.: "pátio para carretas" (texto livre)
+  modulos: z.number().int().positive().optional(),
+  extras: z.array(z.string()).optional(), // ex.: "portaria 24h", "cabine primária"
+});
+
 export const esquemaFicha = z.object({
   versao: z.literal(1),
+  perfil: z.enum(["residencial", "galpao"]).default("residencial"),
+  galpao: fichaGalpao.optional(),
   slug: z.string().min(1),
   nome: z.string().min(1),
   chamada: z.string().default("Reserve agora"),
@@ -86,6 +106,7 @@ export type Trecho = z.infer<typeof trecho>;
 export type Planta = NonNullable<Ficha["planta"]>;
 export type Comodo = Planta["comodos"][number];
 export type Movel = NonNullable<Planta["moveis"]>[number];
+export type FichaGalpao = z.infer<typeof fichaGalpao>;
 export type FichaPublica = Omit<Ficha, "local" | "endereco" | "guia"> & { centro: LatLon };
 
 // Gerador determinístico a partir de um texto (FNV-1a + mulberry32).

@@ -4,6 +4,7 @@ import type { FichaPublica, Ponto } from "../ficha.ts";
 import { ESTILO, FONTE } from "../cena/estilo.ts";
 import { rotuloDistancia, rotuloTempo } from "../tempo.ts";
 import { Icone, NOME_TIPO } from "./Icone.tsx";
+import { linhasFichaTecnica } from "../planta/galpao.ts";
 
 export const entrada = (f: number, ini: number, dur = 12) => interpolate(f, [ini, ini + dur], [0, 1], { extrapolateLeft: "clamp", extrapolateRight: "clamp", easing: (t) => 1 - (1 - t) ** 3 });
 export const saida = (f: number, fim: number, dur = 10) => interpolate(f, [fim - dur, fim], [1, 0], { extrapolateLeft: "clamp", extrapolateRight: "clamp" });
@@ -72,13 +73,13 @@ export const Fecho: React.FC<{ ficha: FichaPublica; vis: number; escala: number;
       {ficha.marca.logo && <Img src={staticFile(ficha.marca.logo)} style={{ height: 110 * s, objectFit: "contain", marginBottom: 24 * s }} />}
       <div style={{ fontSize: 70 * s, fontWeight: 700, color: ESTILO.texto, lineHeight: 1.08 }}>{ficha.nome}</div>
       {ficha.regiao && <div style={{ fontSize: 34 * s, color: ESTILO.textoSuave, marginTop: 12 * s, fontWeight: 500 }}>{ficha.regiao}</div>}
-      {ficha.destaques?.length ? (
+      {(() => { const d = ficha.destaques?.length ? ficha.destaques : ficha.perfil === "galpao" && ficha.galpao ? linhasFichaTecnica(ficha.galpao) : []; return d.length ? (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 14 * s, justifyContent: "center", marginTop: 28 * s }}>
-          {ficha.destaques.slice(0, 4).map((d) => (
+          {d.slice(0, 4).map((d) => (
             <span key={d} style={{ fontSize: 28 * s, padding: `${10 * s}px ${22 * s}px`, borderRadius: 999, border: `2px solid ${ESTILO.chaoBorda}`, color: ESTILO.texto, fontWeight: 600 }}>{d}</span>
           ))}
         </div>
-      ) : null}
+      ) : null; })()}
       <div style={{ marginTop: 40 * s, display: "inline-block", background: ficha.marca.cor, color: ficha.marca.corTexto, fontSize: 42 * s, fontWeight: 700, padding: `${22 * s}px ${54 * s}px`, borderRadius: 999 }}>
         {ficha.chamada}
       </div>

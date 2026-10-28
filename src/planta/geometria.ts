@@ -13,7 +13,7 @@ export type Face = {
   cor: string;
   prof: number;
   comodo?: string;
-  parte?: "piso" | "parede-fundo" | "parede-frente" | "movel" | "laje";
+  parte?: "piso" | "parede-fundo" | "parede-frente" | "movel" | "laje" | "doca" | "pilar" | "caminhao" | "patio" | "escritorio";
   canto?: "fundo" | "frente";
   rotulo?: { x: number; y: number; texto: string; sub: string };
   opacidade?: number;
@@ -86,9 +86,9 @@ export const posicionarMoveis = (planta: Planta): MovelPosto[] => {
   return postos;
 };
 
-type Caixa = { x: number; y: number; z: number; w: number; d: number; h: number; cor: string; comodo?: string; parte: Face["parte"]; canto?: Face["canto"]; opacidade?: number };
+export type Caixa = { x: number; y: number; z: number; w: number; d: number; h: number; cor: string; comodo?: string; parte: Face["parte"]; canto?: Face["canto"]; opacidade?: number };
 
-const facesDaCaixa = (b: Caixa): Face[] => {
+export const facesDaCaixa = (b: Caixa): Face[] => {
   const { x, y, z, w, d, h } = b;
   const P = projetarIso;
   const prof = x + w / 2 + (y + d / 2) + (z + h / 2) * 0.02;

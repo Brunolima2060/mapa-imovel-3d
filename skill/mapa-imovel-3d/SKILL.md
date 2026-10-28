@@ -1,6 +1,6 @@
 ---
 name: mapa-imovel-3d
-description: Transforma o endereço de um imóvel de aluguel (Airbnb, Booking, OLX, Zap, temporada) em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", ou mandarem um endereço de imóvel para divulgar.
+description: Transforma o endereço de um imóvel de aluguel (Airbnb, Booking, OLX, Zap, temporada) ou de um galpão comercial/logístico em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", "galpão", "galpão logístico", "ficha técnica do galpão", "acesso a rodovia", "docas", ou mandarem um endereço de imóvel ou galpão para divulgar.
 ---
 
 # Mapa do imóvel em 3D
@@ -63,6 +63,24 @@ já está tudo conferido.
 | `portfolio` / `publicar --portfolio` | mapa com todos os imóveis |
 
 Tudo sai em `~/mapas-imoveis/<slug>/saida/`.
+
+## Galpões comerciais e de logística
+
+Para galpão, use `novo "<endereço>" --nome "<nome>" --galpao`. Em vez de padaria e farmácia, a CLI procura os
+**acessos logísticos**: as 3 rodovias mais próximas (testa vários pontos de acesso e fica com a menor rota de carro),
+o aeroporto com voos e o centro da cidade — tudo com distância e tempo de carro.
+
+Depois, preencha a **ficha técnica** em `"galpao"` na ficha (veja `referencias/ficha.md`): área construída,
+terreno, pé-direito, docas (e niveladoras), piso (t/m²), energia (kVA), sprinklers, escritório, pátio, módulos e
+extras ("portaria 24h", "cabine primária"). Pergunte ao usuário o que tiver no anúncio ou no folder do galpão; não
+invente números.
+
+Com a ficha técnica, o vídeo ganha a cena **"Ficha técnica"** (galpão isométrico com docas, caminhões, pilares,
+porta-paletes e escritório, com o telhado subindo) e o fecho mostra os números principais. `planta <slug>` gera a
+imagem e a página interativa do galpão; `textos` traz os blocos "Acessos logísticos" e "Ficha técnica".
+
+Galpão costuma ter localização pública (condomínio logístico, placa na rodovia): **pergunte** se pode usar
+`"localizacao": "exata"`; se o dono preferir sigilo, mantenha a aproximada.
 
 ## Privacidade (regra de ouro)
 
