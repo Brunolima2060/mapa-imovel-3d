@@ -16,6 +16,7 @@ import { aeroportoDeCarga, buscarCeasa, buscarPontosLogisticos, buscarVizinhos, 
 import { buscarAlcance, buscarRegiao, cidadesNoAlcance } from "./lib/alcance.ts";
 import { fichaPdfHtml, gerarPdf } from "./lib/pdf.ts";
 import { codigoEmbed, paginaSite } from "./lib/site.ts";
+import { codigoIframe, paginaMapa3D } from "./lib/mapa3d.ts";
 import { paraWeb } from "./lib/web.ts";
 import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pastaPublico, pastaSaida, salvarFicha } from "./lib/pastas.ts";
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
@@ -221,6 +222,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     paraWeb(path.join(bruto, "apresentacao.mp4"), dir, "apresentacao", { webm: false, capaSeg: 4 });
     if (op.ultrawide) paraWeb(path.join(bruto, "apresentacao-ultrawide.mp4"), dir, "apresentacao-ultrawide", { webm: false, capaSeg: 4 });
     fs.writeFileSync(path.join(dir, "mapa.html"), paginaImovel(fp));
+    fs.writeFileSync(path.join(dir, "mapa3d.html"), paginaMapa3D(fp));
     let planta: string | undefined;
     if (f.perfil === "galpao" && f.galpao) { fs.writeFileSync(path.join(dir, "planta.html"), galpaoHtml(f.galpao, fp)); planta = "planta.html"; }
     else if (f.planta?.comodos.length) { fs.writeFileSync(path.join(dir, "planta.html"), plantaHtml(f.planta, fp)); planta = "planta.html"; }
@@ -231,13 +233,24 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
       fs.copyFileSync(arq, path.join(dir, "ficha-tecnica.pdf"));
       pdf = "ficha-tecnica.pdf";
     }
-    fs.writeFileSync(path.join(dir, "index.html"), paginaSite(fp, { fundoMp4: "fundo.mp4", fundoWebm: "fundo.webm", poster: "fundo.jpg", apresentacaoMp4: "apresentacao.mp4", mapa: "mapa.html", planta, pdf }));
+    fs.writeFileSync(path.join(dir, "index.html"), paginaSite(fp, { fundoMp4: "fundo.mp4", fundoWebm: "fundo.webm", poster: "fundo.jpg", apresentacaoMp4: "apresentacao.mp4", mapa: "mapa.html", mapa3d: "mapa3d.html?parado=1", planta, pdf }));
     fs.writeFileSync(path.join(dir, "codigo-para-colar.html"), codigoEmbed({ mp4: "fundo.mp4", webm: "fundo.webm", poster: "fundo.jpg" }) + "\n");
     fs.rmSync(bruto, { recursive: true, force: true });
     const mb = (a: string) => (fs.statSync(path.join(dir, a)).size / 1e6).toFixed(1);
     console.log(`Pronto: ${dir}`);
     console.log(`  index.html (landing page) · fundo.mp4 ${mb("fundo.mp4")} MB · fundo.webm ${mb("fundo.webm")} MB · apresentacao.mp4 ${mb("apresentacao.mp4")} MB`);
     console.log(`  Para pôr no ar: publicar ${f.slug} --site   ·   Para colar num site que já existe: codigo-para-colar.html`);
+  },
+
+  // Só o mapa 3D, para colocar dentro do site (sem vídeo): relevo real, céu, prédios 3D, passeio automático.
+  async mapa3d({ pos }) {
+    const f = carregarFicha(exigirSlug(pos));
+    const dir = path.join(pastaSaida(f.slug), "mapa3d");
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "index.html"), paginaMapa3D(fichaPublica(f)));
+    fs.writeFileSync(path.join(dir, "codigo-para-colar.html"), codigoIframe("ENDEREÇO-DO-MAPA (rode: publicar " + f.slug + " --mapa3d)") + "\n");
+    console.log(`Pronto: ${path.join(dir, "index.html")}`);
+    console.log(`  Para pôr no ar e ganhar o código do iframe: publicar ${f.slug} --mapa3d`);
   },
 
   async tempos({ pos }) {
@@ -387,6 +400,14 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
       return;
     }
     const f = carregarFicha(exigirSlug(pos));
+    if (op.mapa3d) {
+      const dir = path.join(pastaSaida(f.slug), "mapa3d");
+      await comandos.mapa3d({ pos: [f.slug], op: {} });
+      const url = publicarNaVercel(dir, `mapa3d-${f.slug}`.slice(0, 90));
+      fs.writeFileSync(path.join(dir, "codigo-para-colar.html"), codigoIframe(url) + "\n");
+      console.log(`No ar: ${url}\nCódigo para colar no site: ${path.join(dir, "codigo-para-colar.html")}\n\n${codigoIframe(url)}`);
+      return;
+    }
     if (op.site) {
       const dir = path.join(pastaSaida(f.slug), "site");
       if (!fs.existsSync(path.join(dir, "index.html"))) await comandos.site({ pos: [f.slug], op: {} });
@@ -451,6 +472,8 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
   ficha <slug>                     ficha técnica em PDF (A4) para WhatsApp/e-mail
   site <slug> [--ultrawide]        para site: vídeo de fundo em loop, apresentação, versões web e landing page
   publicar <slug> --site           põe a landing page no ar e gera o código para colar em outro site
+  mapa3d <slug>                    só o mapa 3D para o site (relevo real, céu, prédios 3D, passeio)
+  publicar <slug> --mapa3d         põe o mapa 3D no ar e entrega o código do iframe
   portfolio                        mapa com todos os imóveis
   publicar <slug>|--portfolio [--guia]   publica na Vercel (conta grátis do usuário)
   tudo <slug>                      dados + vídeos finais + capa + planta + interativo + textos`);

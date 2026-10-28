@@ -21,7 +21,7 @@ export const codigoEmbed = (v: { mp4: string; webm?: string; poster?: string }) 
   </video>
 </div>`;
 
-type Arquivos = { fundoMp4: string; fundoWebm?: string; poster?: string; apresentacaoMp4?: string; mapa?: string; pdf?: string; planta?: string };
+type Arquivos = { fundoMp4: string; fundoWebm?: string; poster?: string; apresentacaoMp4?: string; mapa?: string; mapa3d?: string; pdf?: string; planta?: string };
 
 export const paginaSite = (f: FichaPublica, a: Arquivos): string => {
   const cor = esc(f.marca.cor);
@@ -86,7 +86,7 @@ ${a.poster ? `<meta property="og:image" content="${esc(a.poster)}">` : ""}
 </section>
 
 ${a.apresentacaoMp4 ? `<section><h2>Apresentação</h2><div class="quadro v"><video controls playsinline preload="metadata"${a.poster ? ` poster="${esc(a.poster)}"` : ""} src="${esc(a.apresentacaoMp4)}"></video></div></section>` : ""}
-${a.mapa ? `<section><h2>Mapa 3D interativo</h2><div class="quadro m"><iframe src="${esc(a.mapa)}" title="Mapa 3D" loading="lazy"></iframe></div></section>` : ""}
+${a.mapa ? `<section><h2>Mapa 3D interativo</h2><div class="quadro m"><iframe src="${esc(a.mapa3d ?? a.mapa)}" title="Mapa 3D" loading="lazy" allowfullscreen></iframe></div></section>` : ""}
 ${a.planta ? `<section><h2>${f.perfil === "galpao" ? "O galpão por dentro" : "A planta"}</h2><div class="quadro m"><iframe src="${esc(a.planta)}" title="Planta" loading="lazy"></iframe></div></section>` : ""}
 
 <footer id="contato">

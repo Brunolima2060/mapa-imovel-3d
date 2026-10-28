@@ -66,6 +66,7 @@ já está tudo conferido.
 | `portfolio` / `publicar --portfolio` | mapa com todos os imóveis |
 | `logistica <slug>` | galpão: alcance de caminhão, portos, aeroporto de carga, CEASA, vizinhos logísticos |
 | `ficha <slug>` | ficha técnica em PDF (A4) para WhatsApp/e-mail |
+| `mapa3d <slug>` / `publicar <slug> --mapa3d` | só o mapa 3D realista para o site + código do iframe |
 | `site <slug> [--ultrawide]` | para site: vídeo de fundo em loop, apresentação 16:9/21:9, versões web e landing page |
 | `publicar <slug> --site` | landing page no ar + código para colar em outro site |
 
@@ -104,6 +105,14 @@ o vídeo. `tudo <slug>` já inclui o PDF para galpão.
 
 Galpão costuma ter localização pública (condomínio logístico, placa na rodovia): **pergunte** se pode usar
 `"localizacao": "exata"`; se o dono preferir sigilo, mantenha a aproximada.
+
+## Só o mapa 3D, para o site
+
+Quando pedirem "só o mapa 3D", "mapa para o site", "mapa sem vídeo", "mapa realista": `mapa3d <slug>` gera uma
+página de mapa em tela cheia com **relevo de verdade** (Terrarium), sombreado do terreno, céu e névoa de horizonte,
+prédios 3D com luz de fim de tarde, o galpão em destaque, rodovias e vizinhos com etiqueta, e um passeio lento da
+câmera até o visitante mexer. `publicar <slug> --mapa3d` põe no ar e entrega o **código do iframe** para colar no
+site (WordPress, Wix...). Na URL: `?limpo=1` tira título e etiquetas (fundo), `?parado=1` tira o passeio.
 
 ## Vídeo para SITE e landing page
 
