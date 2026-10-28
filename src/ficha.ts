@@ -47,6 +47,8 @@ export const esquemaFicha = z.object({
   slug: z.string().min(1),
   nome: z.string().min(1),
   chamada: z.string().default("Reserve agora"),
+  regiao: z.string().optional(), // "Bairro · Cidade" (público)
+  destaques: z.array(z.string()).optional(), // ex.: "2 quartos", "vista para o mar" (público)
   endereco: z.string(),
   local: latLon,
   localizacao: z.enum(["aproximada", "exata"]).default("aproximada"),
