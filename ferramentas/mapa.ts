@@ -17,7 +17,7 @@ import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pa
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
 import { fecharNavegador, renderizarImagem, renderizarVideo } from "./lib/render.ts";
 import { fichaPublica, sortearArea, type Ficha } from "../src/ficha.ts";
-import { escolherUrlVercel, mesmaOrigem, nomePadrao } from "./lib/utilidades.ts";
+import { escolherUrlVercel, mesmaOrigem, nomePadrao, perfilDe } from "./lib/utilidades.ts";
 import { rotuloTempo } from "../src/tempo.ts";
 
 type Args = { pos: string[]; op: Record<string, string | true> };
@@ -99,7 +99,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     const lugar = await geocodificar(entrada, cache);
     console.log(`Achei: ${lugar.nomeExibicao}`);
     console.log("  (confira se é o lugar certo; se não for, rode de novo com cidade e estado ou com as coordenadas)");
-    const galpao = !!op.galpao;
+    const galpao = perfilDe(op) === "galpao";
     console.log(galpao ? "Procurando rodovias, aeroporto e centro (OpenStreetMap)..." : "Procurando o que tem em volta (OpenStreetMap)...");
     const pontos = galpao ? await buscarPontosLogisticos(lugar, cache) : await buscarPontos(lugar, cache);
     console.log(`Calculando ${galpao ? "distância e tempo de carro" : "tempo a pé e de carro"} até ${pontos.length} pontos...`);
@@ -322,7 +322,7 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
 
   async ajuda() {
     console.log(`mapa-imovel-3d — comandos (node ferramentas/mapa.ts <comando> ...)
-  novo "<endereço|coordenadas|link>" --nome "..." [--galpao] [--exata]   cria a ficha (--galpao: comercial/logística)
+  novo "<endereço|coordenadas|link>" --nome "..." [--residencial] [--exata]   cria a ficha (padrão: galpão comercial/logístico)
   tempos <slug>                    recalcula tempos depois de mexer nos pontos
   dados <slug>                     baixa relevo, prédios e ruas (maquete 3D)
   quadro <slug> <n> [<n>...]       quadros soltos do vídeo em PNG, para conferir

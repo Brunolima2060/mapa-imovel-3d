@@ -69,3 +69,10 @@ test("link do anúncio só aceita http(s)", () => {
   const f = fichaPublica(base({ area: sortearArea(real, 250), anuncio: { link: "javascript:alert(1)" } }));
   assert.ok(!paginaImovel(f).includes("javascript:alert"));
 });
+
+test("perfil padrão é galpão; residencial só quando pedido", async () => {
+  const { perfilDe } = await import("../ferramentas/lib/utilidades.ts");
+  assert.equal(perfilDe({}), "galpao");
+  assert.equal(perfilDe({ residencial: true }), "residencial");
+  assert.equal(perfilDe({ galpao: true }), "galpao");
+});

@@ -1,9 +1,12 @@
 ---
 name: mapa-imovel-3d
-description: Transforma o endereço de um imóvel de aluguel (Airbnb, Booking, OLX, Zap, temporada) ou de um galpão comercial/logístico em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", "galpão", "galpão logístico", "ficha técnica do galpão", "acesso a rodovia", "docas", ou mandarem um endereço de imóvel ou galpão para divulgar.
+description: Transforma o endereço de um GALPÃO comercial/logístico (o caso principal) ou de um imóvel de aluguel (Airbnb, Booking, temporada) em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", "galpão", "galpão logístico", "ficha técnica do galpão", "acesso a rodovia", "docas", ou mandarem um endereço de imóvel ou galpão para divulgar.
 ---
 
-# Mapa do imóvel em 3D
+# Mapa do imóvel em 3D — foco em galpões
+
+**O uso principal é galpão comercial e de logística.** `novo` já cria a ficha no perfil galpão; só use
+`--residencial` quando o pedido for claramente apartamento/casa de temporada. Na dúvida, galpão.
 
 Você opera a CLI do projeto **mapa-imovel-3d**. O caminho do projeto está em `projeto.txt`, na mesma pasta
 deste arquivo (`~/.claude/skills/mapa-imovel-3d/projeto.txt`). Todo comando é:
@@ -15,11 +18,11 @@ node "<projeto>/ferramentas/mapa.ts" <comando> ...
 Os imóveis ficam em `~/mapas-imoveis/<slug>/` (uma pasta por imóvel, com `ficha.json`, `publico/` e `saida/`).
 Fale sempre em português, em linguagem simples: o usuário aluga imóveis, não é programador.
 
-## Fluxo padrão (um imóvel novo)
+## Fluxo padrão (um galpão ou imóvel novo)
 
 1. **Entender o pedido.** Pegue o endereço (ou coordenadas, ou link do Google Maps) e um nome curto para o imóvel
    ("Apê na Paulista", "Casa no Itaguá"). Pergunte só o que faltar.
-2. **Criar a ficha:** `novo "<endereço>" --nome "<nome>"` (o nome é obrigatório e nunca deve ser a rua: ele aparece
+2. **Criar a ficha:** `novo "<endereço>" --nome "<nome>"` (galpão; acrescente `--residencial` para apê/casa) (o nome é obrigatório e nunca deve ser a rua: ele aparece
    no vídeo e no link). **Confirme com o usuário a linha `Achei: ...`** (cidade e bairro certos?); se estiver errado,
    refaça com `--refazer` e o endereço com cidade/estado, ou com as coordenadas. Links curtos do celular
    (`maps.app.goo.gl`) não trazem coordenadas: peça o link completo ou as coordenadas (no Google Maps, toque e segure no
@@ -46,7 +49,7 @@ já está tudo conferido.
 
 | Comando | O que faz |
 |---|---|
-| `novo "<endereço>" [--nome ".."] [--slug x] [--exata] [--refazer]` | cria a ficha, acha os pontos e calcula os tempos |
+| `novo "<endereço>" --nome ".." [--residencial] [--slug x] [--exata] [--refazer]` | cria a ficha (padrão galpão), acha os pontos e calcula os tempos |
 | `tempos <slug>` | recalcula tempos e distâncias depois de mexer nos pontos |
 | `area <slug>` | sorteia de novo o círculo aproximado (obrigatório depois de mudar `raioAproxM`; depois rode `dados`) |
 | `dados <slug>` | monta a maquete 3D (`publico/cidade.json`) |
@@ -66,7 +69,7 @@ Tudo sai em `~/mapas-imoveis/<slug>/saida/`.
 
 ## Galpões comerciais e de logística
 
-Para galpão, use `novo "<endereço>" --nome "<nome>" --galpao`. Em vez de padaria e farmácia, a CLI procura os
+Galpão é o padrão: `novo "<endereço>" --nome "<nome>"`. Em vez de padaria e farmácia, a CLI procura os
 **acessos logísticos**: as 3 rodovias mais próximas (testa vários pontos de acesso e fica com a menor rota de carro),
 o aeroporto com voos e o centro da cidade — tudo com distância e tempo de carro.
 

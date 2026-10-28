@@ -13,3 +13,6 @@ export const escolherUrlVercel = (saida: string, nomeProjeto: string): string | 
   const fixo = `https://${nomeProjeto}.vercel.app`;
   return urls.find((u) => u.toLowerCase() === fixo) ?? urls.find((u) => /Aliased/i.test(saida.split(u)[0].split("\n").pop() ?? "")) ?? urls[urls.length - 1];
 };
+
+// O foco da skill é galpão comercial/logístico: é o padrão. Imóvel residencial/temporada só com --residencial.
+export const perfilDe = (op: Record<string, unknown>): "galpao" | "residencial" => (op.residencial ? "residencial" : "galpao");

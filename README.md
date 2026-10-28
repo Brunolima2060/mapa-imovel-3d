@@ -1,6 +1,8 @@
-# Mapa do imóvel em 3D — skill do Claude Code
+# Mapa do imóvel em 3D — skill do Claude Code (foco em galpões)
 
-Do endereço de um imóvel de aluguel ao material de anúncio, sem gastar nada:
+Do endereço de um **galpão comercial ou logístico** (ou de um imóvel de temporada) ao material de anúncio, sem gastar
+nada. Para galpão: as rodovias mais próximas com km e minutos de carro, aeroporto, centro, a ficha técnica (área,
+pé-direito, docas, piso, kVA...) e o galpão em 3D isométrico com docas, caminhões e porta-paletes. Também:
 
 - **vídeo** vertical (Reels/TikTok/Stories) e horizontal (YouTube/anúncio) com a cidade em 3D, a região do imóvel e
   os pontos próximos (praia, metrô, mercado...) com o tempo a pé ou de carro;
@@ -27,6 +29,10 @@ npm run instalar-skill
 ```
 
 Pronto. Abra o Claude Code (em qualquer pasta) e peça, por exemplo:
+
+> faz o material do galpão na Rodovia Anhanguera, km 30, Cajamar — 6.200 m², pé-direito 12 m, 10 docas
+
+ou, para temporada:
 
 > faz o mapa 3D do meu apê na Rua Guarani, 200, Itaguá, Ubatuba, SP — o nome é "Casa no Itaguá"
 
@@ -57,10 +63,12 @@ npm run instalar-skill
 
 ```bash
 npm run mapa -- ajuda
-npm run mapa -- novo "Avenida Paulista, 1578, São Paulo" --nome "Apê na Paulista"
-npm run mapa -- dados ape-na-paulista
-npm run mapa -- video ape-na-paulista            # rascunho
-npm run mapa -- video ape-na-paulista --final    # vertical + horizontal
+npm run mapa -- novo "-23.3540, -46.8770" --nome "Galpão Cajamar"      # galpão (padrão)
+#   edite ~/mapas-imoveis/galpao-cajamar/ficha.json -> "galpao": { ficha técnica }
+npm run mapa -- dados galpao-cajamar
+npm run mapa -- video galpao-cajamar            # rascunho
+npm run mapa -- video galpao-cajamar --final    # vertical + horizontal
+npm run mapa -- novo "Avenida Paulista, 1578, São Paulo" --nome "Apê na Paulista" --residencial
 ```
 
 ## Privacidade
