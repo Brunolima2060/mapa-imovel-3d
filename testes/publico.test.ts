@@ -19,8 +19,11 @@ const base = () =>
 
 test("fichaPublica aproximada não vaza rua, coordenadas reais nem o guia", () => {
   const txt = JSON.stringify(fichaPublica(base()));
-  for (const proibido of ["Flores", "-23.4339", "-45.0712", "código 1234", "Rodoviária"]) {
+  for (const proibido of ["Flores", "código 1234", "Rodoviária"]) {
     assert.ok(!txt.includes(proibido), `vazou: ${proibido}`);
+  }
+  for (const n of [/-23\.4339(?!\d)/, /-45\.0712(?!\d)/]) {
+    assert.ok(!n.test(txt), `vazou a coordenada real ${n}`);
   }
   assert.ok(txt.includes("Praia do Itaguá"));
 });

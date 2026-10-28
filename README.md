@@ -50,6 +50,14 @@ vercel login
 
 Depois é só pedir ao Claude "publica o mapa do imóvel".
 
+### Para o site
+
+```bash
+npm run mapa -- site galpao-cajamar             # vídeo de fundo em loop + apresentação + landing page
+npm run mapa -- site galpao-cajamar --ultrawide # também em 21:9 (2560x1080)
+npm run mapa -- publicar galpao-cajamar --site  # landing page no ar
+```
+
 ## Atualizar
 
 ```bash

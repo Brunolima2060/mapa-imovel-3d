@@ -4,6 +4,8 @@ import { Capa } from "./video/Capa.tsx";
 import { DURACAO_GUIA, GuiaChegada, type PropsGuia } from "./video/GuiaChegada.tsx";
 import { PlantaImagem } from "./planta/PlantaImagem.tsx";
 import { MapaAlcanceStill } from "./video/MapaAlcance.tsx";
+import { FundoSite } from "./video/FundoSite.tsx";
+import { DURACAO_FUNDO } from "./cena/fundo.ts";
 import { GalpaoFicha } from "./planta/PlantaImagem.tsx";
 import type { FichaPublica } from "./ficha.ts";
 
@@ -23,6 +25,11 @@ export const Raiz: React.FC = () => (
   <>
     <Composition id="ImovelVertical" component={VideoImovel} width={1080} height={1920} fps={FPS} durationInFrames={300} defaultProps={propsExemplo} calculateMetadata={duracao} />
     <Composition id="ImovelHorizontal" component={VideoImovel} width={1920} height={1080} fps={FPS} durationInFrames={300} defaultProps={propsExemplo} calculateMetadata={duracao} />
+    {/* Para site: apresentação no ritmo calmo (16:9 e tela ultralarga 21:9) e vídeo de fundo em loop */}
+    <Composition id="Apresentacao" component={VideoImovel} width={1920} height={1080} fps={FPS} durationInFrames={300} defaultProps={{ ...propsExemplo, ritmo: "apresentacao" as const }} calculateMetadata={duracao} />
+    <Composition id="ApresentacaoUltrawide" component={VideoImovel} width={2560} height={1080} fps={FPS} durationInFrames={300} defaultProps={{ ...propsExemplo, ritmo: "apresentacao" as const }} calculateMetadata={duracao} />
+    <Composition id="FundoSite" component={FundoSite} width={1920} height={1080} fps={FPS} durationInFrames={DURACAO_FUNDO * FPS} defaultProps={{ ficha: exemplo }} />
+    <Composition id="FundoSiteVertical" component={FundoSite} width={1080} height={1920} fps={FPS} durationInFrames={DURACAO_FUNDO * FPS} defaultProps={{ ficha: exemplo }} />
     <Composition id="GuiaVertical" component={GuiaChegada} width={1080} height={1920} fps={FPS} durationInFrames={DURACAO_GUIA * FPS} defaultProps={guiaExemplo} />
     <Composition id="GuiaHorizontal" component={GuiaChegada} width={1920} height={1080} fps={FPS} durationInFrames={DURACAO_GUIA * FPS} defaultProps={guiaExemplo} />
     <Still id="Planta" component={PlantaImagem} width={1600} height={1200} defaultProps={{ ficha: exemplo }} />

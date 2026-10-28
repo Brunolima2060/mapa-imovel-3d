@@ -1,6 +1,6 @@
 ---
 name: mapa-imovel-3d
-description: Transforma o endereço de um GALPÃO comercial/logístico (o caso principal) ou de um imóvel de aluguel (Airbnb, Booking, temporada) em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", "galpão", "galpão logístico", "ficha técnica do galpão", "acesso a rodovia", "docas", ou mandarem um endereço de imóvel ou galpão para divulgar.
+description: Transforma o endereço de um GALPÃO comercial/logístico (o caso principal) ou de um imóvel de aluguel (Airbnb, Booking, temporada) em material de anúncio com mapa 3D — vídeo vertical e horizontal com a maquete da cidade e os pontos próximos (praia, metrô, mercado...) com tempo a pé/de carro, imagem de capa, mapa 3D interativo com link, planta isométrica "desmontável" do imóvel, guia de chegada do hóspede (vídeo + página com a rota), QR code, textos prontos e portfólio de imóveis. Tudo grátis (OpenStreetMap, OpenFreeMap, Remotion). Use quando pedirem "mapa do imóvel", "mapa 3D", "vídeo do apartamento", "vídeo para o anúncio", "o que tem perto", "planta do apê", "planta isométrica", "guia de chegada", "como chegar", "QR code do imóvel", "texto de localização", "portfólio dos imóveis", "vídeo para o site", "landing page", "apresentação", "vídeo de fundo", "galpão", "galpão logístico", "ficha técnica do galpão", "acesso a rodovia", "docas", ou mandarem um endereço de imóvel ou galpão para divulgar.
 ---
 
 # Mapa do imóvel em 3D — foco em galpões
@@ -66,6 +66,8 @@ já está tudo conferido.
 | `portfolio` / `publicar --portfolio` | mapa com todos os imóveis |
 | `logistica <slug>` | galpão: alcance de caminhão, portos, aeroporto de carga, CEASA, vizinhos logísticos |
 | `ficha <slug>` | ficha técnica em PDF (A4) para WhatsApp/e-mail |
+| `site <slug> [--ultrawide]` | para site: vídeo de fundo em loop, apresentação 16:9/21:9, versões web e landing page |
+| `publicar <slug> --site` | landing page no ar + código para colar em outro site |
 
 Tudo sai em `~/mapas-imoveis/<slug>/saida/`.
 
@@ -102,6 +104,21 @@ o vídeo. `tudo <slug>` já inclui o PDF para galpão.
 
 Galpão costuma ter localização pública (condomínio logístico, placa na rodovia): **pergunte** se pode usar
 `"localizacao": "exata"`; se o dono preferir sigilo, mantenha a aproximada.
+
+## Vídeo para SITE e landing page
+
+Quando pedirem vídeo "para o site", "para a página", "landing page", "apresentação", "tela grande", "banner em vídeo"
+ou "vídeo de fundo": use `site <slug>` (e `--ultrawide` se for tela larga 21:9). Ele gera em `saida/site/`:
+- **`fundo.mp4` / `fundo.webm` / `fundo.jpg`**: vídeo de fundo **sem texto**, uma volta lenta em volta do galpão
+  que fecha em loop perfeito — para o topo do site, atrás do título. Leve (H.264 com início rápido + VP9).
+- **`apresentacao.mp4`** (16:9) e **`apresentacao-ultrawide.mp4`** (21:9, 2560x1080): o vídeo completo no ritmo
+  calmo, para página de produto, reunião ou TV.
+- **`index.html`**: landing page pronta — vídeo de fundo, nome, ficha técnica, acessos, alcance, vizinhos,
+  apresentação, mapa 3D interativo, galpão por dentro, PDF e botão de WhatsApp (sai de `marca.contato`).
+- **`codigo-para-colar.html`**: o trecho `<video>` para colar no site que ele já tem (WordPress, Wix, etc.).
+
+`publicar <slug> --site` põe a landing page no ar (Vercel do usuário) e reescreve o código para colar com os links
+já publicados. Formatos de anúncio continuam no `video` (vertical/horizontal).
 
 ## Privacidade (regra de ouro)
 

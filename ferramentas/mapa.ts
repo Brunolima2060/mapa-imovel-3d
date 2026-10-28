@@ -15,9 +15,11 @@ import { galpaoHtml, plantaHtml } from "../src/planta/svg.ts";
 import { aeroportoDeCarga, buscarCeasa, buscarPontosLogisticos, buscarVizinhos, portosProximos } from "./lib/logistica.ts";
 import { buscarAlcance, buscarRegiao, cidadesNoAlcance } from "./lib/alcance.ts";
 import { fichaPdfHtml, gerarPdf } from "./lib/pdf.ts";
+import { codigoEmbed, paginaSite } from "./lib/site.ts";
+import { paraWeb } from "./lib/web.ts";
 import { carregarFicha, listarImoveis, pastaCache, pastaImoveis, pastaImovel, pastaPublico, pastaSaida, salvarFicha } from "./lib/pastas.ts";
 import { gerarCidade, RAIO_M, salvarCidade } from "./lib/cidade.ts";
-import { fecharNavegador, renderizarImagem, renderizarVideo } from "./lib/render.ts";
+import { fecharNavegador, limparPacotes, renderizarImagem, renderizarVideo } from "./lib/render.ts";
 import { fichaPublica, sortearArea, type Ficha } from "../src/ficha.ts";
 import { escolherUrlVercel, mesmaOrigem, nomePadrao, perfilDe } from "./lib/utilidades.ts";
 import { rotuloTempo } from "../src/tempo.ts";
@@ -195,6 +197,49 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
     console.log(`Pronto: ${pdf}`);
   },
 
+  // Material para SITE / landing page: vídeo de fundo em loop, apresentação calma (16:9, e 21:9 com --ultrawide),
+  // versões leves para web (MP4 + WebM + capa), mapa interativo, planta, PDF e a página pronta.
+  async site({ pos, op }) {
+    const f = carregarFicha(exigirSlug(pos));
+    exigirDados(f.slug);
+    const fp = fichaPublica(f);
+    const dir = path.join(pastaSaida(f.slug), "site");
+    fs.mkdirSync(dir, { recursive: true });
+    const bruto = path.join(pastaSaida(f.slug), "_bruto");
+    fs.mkdirSync(bruto, { recursive: true });
+    const fotos = (f.fotos ?? []).filter((x) => fs.existsSync(path.join(pastaPublico(f.slug), x)));
+    console.log("Renderizando o vídeo de fundo (volta completa, em loop)...");
+    await renderizarVideo({ publico: pastaPublico(f.slug), composicao: "FundoSite", props: { ficha: fp }, saida: path.join(bruto, "fundo.mp4") });
+    console.log("Renderizando a apresentação (ritmo calmo, 16:9)...");
+    await renderizarVideo({ publico: pastaPublico(f.slug), composicao: "Apresentacao", props: { ficha: fp, comPlanta: true, fotos, ritmo: "apresentacao" }, saida: path.join(bruto, "apresentacao.mp4") });
+    if (op.ultrawide) {
+      console.log("Renderizando a apresentação em tela ultralarga (21:9)...");
+      await renderizarVideo({ publico: pastaPublico(f.slug), composicao: "ApresentacaoUltrawide", props: { ficha: fp, comPlanta: true, fotos, ritmo: "apresentacao" }, saida: path.join(bruto, "apresentacao-ultrawide.mp4") });
+    }
+    console.log("Gerando versões leves para web...");
+    paraWeb(path.join(bruto, "fundo.mp4"), dir, "fundo");
+    paraWeb(path.join(bruto, "apresentacao.mp4"), dir, "apresentacao", { webm: false, capaSeg: 4 });
+    if (op.ultrawide) paraWeb(path.join(bruto, "apresentacao-ultrawide.mp4"), dir, "apresentacao-ultrawide", { webm: false, capaSeg: 4 });
+    fs.writeFileSync(path.join(dir, "mapa.html"), paginaImovel(fp));
+    let planta: string | undefined;
+    if (f.perfil === "galpao" && f.galpao) { fs.writeFileSync(path.join(dir, "planta.html"), galpaoHtml(f.galpao, fp)); planta = "planta.html"; }
+    else if (f.planta?.comodos.length) { fs.writeFileSync(path.join(dir, "planta.html"), plantaHtml(f.planta, fp)); planta = "planta.html"; }
+    let pdf: string | undefined;
+    if (f.perfil === "galpao") {
+      const arq = path.join(pastaSaida(f.slug), "ficha-tecnica.pdf");
+      if (!fs.existsSync(arq)) await comandos.ficha({ pos: [f.slug], op: {} });
+      fs.copyFileSync(arq, path.join(dir, "ficha-tecnica.pdf"));
+      pdf = "ficha-tecnica.pdf";
+    }
+    fs.writeFileSync(path.join(dir, "index.html"), paginaSite(fp, { fundoMp4: "fundo.mp4", fundoWebm: "fundo.webm", poster: "fundo.jpg", apresentacaoMp4: "apresentacao.mp4", mapa: "mapa.html", planta, pdf }));
+    fs.writeFileSync(path.join(dir, "codigo-para-colar.html"), codigoEmbed({ mp4: "fundo.mp4", webm: "fundo.webm", poster: "fundo.jpg" }) + "\n");
+    fs.rmSync(bruto, { recursive: true, force: true });
+    const mb = (a: string) => (fs.statSync(path.join(dir, a)).size / 1e6).toFixed(1);
+    console.log(`Pronto: ${dir}`);
+    console.log(`  index.html (landing page) · fundo.mp4 ${mb("fundo.mp4")} MB · fundo.webm ${mb("fundo.webm")} MB · apresentacao.mp4 ${mb("apresentacao.mp4")} MB`);
+    console.log(`  Para pôr no ar: publicar ${f.slug} --site   ·   Para colar num site que já existe: codigo-para-colar.html`);
+  },
+
   async tempos({ pos }) {
     const f = carregarFicha(exigirSlug(pos));
     console.log(`Recalculando tempos de ${f.pontos.length} pontos...`);
@@ -342,6 +387,14 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
       return;
     }
     const f = carregarFicha(exigirSlug(pos));
+    if (op.site) {
+      const dir = path.join(pastaSaida(f.slug), "site");
+      if (!fs.existsSync(path.join(dir, "index.html"))) await comandos.site({ pos: [f.slug], op: {} });
+      const url = publicarNaVercel(dir, `site-${f.slug}`.slice(0, 90));
+      fs.writeFileSync(path.join(dir, "codigo-para-colar.html"), codigoEmbed({ mp4: `${url}/fundo.mp4`, webm: `${url}/fundo.webm`, poster: `${url}/fundo.jpg` }) + "\n");
+      console.log(`No ar: ${url}\nCódigo para colar em outro site (com os links já certos): ${path.join(dir, "codigo-para-colar.html")}`);
+      return;
+    }
     if (op.guia) {
       if (!f.guia) throw new Error(`Crie o guia antes: guia ${f.slug} --origem "..."`);
       const segredo = f.guia.url?.match(/guia-[a-z0-9-]+-([a-f0-9]{8})/)?.[1] ?? randomBytes(4).toString("hex");
@@ -396,6 +449,8 @@ const comandos: Record<string, (a: Args) => Promise<void>> = {
   textos <slug>                    textos prontos para o anúncio
   logistica <slug>                 galpão: portos, aeroporto de carga, CEASA, vizinhos e alcance de caminhão
   ficha <slug>                     ficha técnica em PDF (A4) para WhatsApp/e-mail
+  site <slug> [--ultrawide]        para site: vídeo de fundo em loop, apresentação, versões web e landing page
+  publicar <slug> --site           põe a landing page no ar e gera o código para colar em outro site
   portfolio                        mapa com todos os imóveis
   publicar <slug>|--portfolio [--guia]   publica na Vercel (conta grátis do usuário)
   tudo <slug>                      dados + vídeos finais + capa + planta + interativo + textos`);
@@ -414,6 +469,7 @@ const principal = async () => {
     await fn(lerArgs(resto));
   } finally {
     await fecharNavegador();
+    await limparPacotes();
   }
 };
 

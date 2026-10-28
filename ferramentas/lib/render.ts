@@ -23,9 +23,10 @@ export const chromeInstalado = (): string | undefined =>
   ].find((c): c is string => !!c && fs.existsSync(c));
 
 const pacotes = new Map<string, Promise<string>>();
+const ativos = new Set<string>(); // bundles desta execução: a limpeza nunca mexe neles
 const pacote = (publico: string) => {
   if (!pacotes.has(publico)) {
-    pacotes.set(publico, bundle({ entryPoint: path.join(RAIZ, "src", "index.ts"), publicDir: publico, onProgress: () => {} }));
+    pacotes.set(publico, bundle({ entryPoint: path.join(RAIZ, "src", "index.ts"), publicDir: publico, onProgress: () => {} }).then((d) => (ativos.add(path.resolve(d)), d)));
   }
   return pacotes.get(publico)!;
 };
@@ -44,6 +45,18 @@ let navegador: ReturnType<typeof openBrowser> | null = null;
 const opcoesNavegador = async () => {
   navegador ??= openBrowser("chrome", { ...navegadorBase(), chromiumOptions: navegadorBase().chromiumOptions });
   return { ...navegadorBase(), puppeteerInstance: await navegador, timeoutInMilliseconds: 240000 };
+};
+
+// Cada bundle do Remotion é uma cópia do projeto (~40 MB) no Temp: apaga as desta execução no fim.
+export const limparPacotes = async () => {
+  for (const p of pacotes.values()) {
+    try {
+      const dir = await p;
+      if (dir && fs.existsSync(dir) && dir.startsWith(os.tmpdir())) fs.rmSync(dir, { recursive: true, force: true });
+    } catch {}
+  }
+  pacotes.clear();
+  ativos.clear();
 };
 
 export const fecharNavegador = async () => {
@@ -117,8 +130,9 @@ const limparTemp = () => {
   const tmp = os.tmpdir();
   const limite = Date.now() - 10 * 60 * 1000;
   for (const n of fs.readdirSync(tmp)) {
-    if (!/^puppeteer_dev_chrome_profile-/.test(n)) continue;
+    if (!/^(puppeteer_dev_chrome_profile-|remotion-webpack-bundle-)/.test(n)) continue; // sobras de execuções antigas
     const p = path.join(tmp, n);
+    if ([...ativos].some((a) => path.resolve(p) === a || a.startsWith(path.resolve(p) + path.sep))) continue;
     try {
       if (fs.statSync(p).mtimeMs < limite) fs.rmSync(p, { recursive: true, force: true });
     } catch {}

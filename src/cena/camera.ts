@@ -11,7 +11,11 @@ export const DURACAO = { abertura: 2.5, chegada: 3, ponto: 3, alcance: 6, planta
 export const MAX_FOTOS = 4;
 const TRANSICAO = 1.4; // segundos de viagem no começo de cada cena
 
-export const montarRoteiro = ({ nPontos, comPlanta, nFotos, fps, comAlcance = false }: { nPontos: number; comPlanta: boolean; nFotos: number; fps: number; comAlcance?: boolean }): Roteiro => {
+export type Ritmo = "anuncio" | "apresentacao";
+// Apresentação (site, reunião): mesmas cenas, mais tempo em cada uma para ler com calma.
+const FATOR: Record<Ritmo, number> = { anuncio: 1, apresentacao: 1.6 };
+
+export const montarRoteiro = ({ nPontos, comPlanta, nFotos, fps, comAlcance = false, ritmo = "anuncio" }: { nPontos: number; comPlanta: boolean; nFotos: number; fps: number; comAlcance?: boolean; ritmo?: Ritmo }): Roteiro => {
   const tipos: [TipoCena, number][] = [["abertura", 0], ["chegada", 0]];
   for (let i = 0; i < nPontos; i++) tipos.push(["ponto", i]);
   if (comAlcance) tipos.push(["alcance", 0]);
@@ -21,7 +25,7 @@ export const montarRoteiro = ({ nPontos, comPlanta, nFotos, fps, comAlcance = fa
   const cenas: Cena[] = [];
   let t = 0;
   for (const [tipo, indice] of tipos) {
-    const dur = Math.round(DURACAO[tipo] * fps);
+    const dur = Math.round(DURACAO[tipo] * FATOR[ritmo] * fps);
     cenas.push({ tipo, ini: t, dur, indice });
     t += dur;
   }

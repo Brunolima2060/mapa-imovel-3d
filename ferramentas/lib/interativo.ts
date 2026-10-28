@@ -84,6 +84,7 @@ export const paginaImovel = (f: FichaPublica): string => {
   const exata = f.localizacao === "exata";
   const dados = {
     centro: f.centro,
+    zoom: f.perfil === "galpao" ? 14.6 : 15.3, // galpão: mostra o polo logístico em volta
     raio: f.raioAproxM,
     exata,
     pontos: f.pontos.map((p) => ({ nome: p.nome, lat: p.lat, lon: p.lon, tempo: rotuloTempo(p) })),
@@ -91,7 +92,7 @@ export const paginaImovel = (f: FichaPublica): string => {
     vizinhos: f.logistica?.vizinhos ?? [],
   };
   const blocoAlcance = (f.logistica?.alcance ?? []).length
-    ? `<div class="item" id="ver-alcance"><span class="bola">⏱</span><div><b>Alcance de caminhão</b><small>${(f.logistica?.alcance ?? []).map((a) => `${a.minutos} min: ${a.cidades.slice(0, 3).join(", ") || "—"}`).map(esc).join(" · ")}</small></div><em>ver</em></div>`
+    ? `<div class="item" id="ver-alcance"><span class="bola">⏱</span><div><b>Alcance de caminhão</b><small>${(f.logistica?.alcance ?? []).filter((a) => a.cidades.length).map((a) => `${a.minutos} min: ${a.cidades.slice(0, 3).join(", ")}`).map(esc).join(" · ")}</small></div><em>ver</em></div>`
     : "";
   const blocoVizinhos = (f.logistica?.vizinhos ?? []).map((v) => `<div class="item"><span class="bola" style="background:#2E3A39;color:#fff">◆</span><div><b>${esc(v.nome)}</b><small>vizinho logístico</small></div><em>${(v.metros / 1000).toFixed(1).replace(".", ",")} km</em></div>`).join("");
   const painel = `${blocoAlcance}${itensPontos(f)}${blocoVizinhos}
@@ -112,8 +113,9 @@ mapa.on("load", () => {
   const cor = getComputedStyle(document.documentElement).getPropertyValue("--cor");
   [...D.alcance].reverse().forEach((a, i) => {
     mapa.addSource("alc" + a.minutos, { type: "geojson", data: { type: "Feature", geometry: { type: "Polygon", coordinates: [a.anel] } } });
-    mapa.addLayer({ id: "alc-f" + a.minutos, type: "fill", source: "alc" + a.minutos, paint: { "fill-color": cor, "fill-opacity": [0.06, 0.1, 0.16][i] || 0.06 } });
-    mapa.addLayer({ id: "alc-l" + a.minutos, type: "line", source: "alc" + a.minutos, paint: { "line-color": cor, "line-width": 1.5, "line-opacity": 0.8 } });
+    // escondido no começo (a vista 3D fica limpa); aparece ao tocar em "Alcance de caminhão"
+    mapa.addLayer({ id: "alc-f" + a.minutos, type: "fill", source: "alc" + a.minutos, layout: { visibility: "none" }, paint: { "fill-color": cor, "fill-opacity": [0.1, 0.16, 0.24][i] || 0.1 } });
+    mapa.addLayer({ id: "alc-l" + a.minutos, type: "line", source: "alc" + a.minutos, layout: { visibility: "none" }, paint: { "line-color": cor, "line-width": 1.5, "line-opacity": 0.8 } });
   });
 });
 D.vizinhos.forEach((v) => {
@@ -121,10 +123,18 @@ D.vizinhos.forEach((v) => {
   new maplibregl.Marker({ element: el("marcador", "◆") }).setLngLat([v.lon, v.lat]).setPopup(pop).addTo(mapa);
 });
 const va = document.getElementById("ver-alcance");
+let alcanceVisivel = false;
 if (va) va.addEventListener("click", () => {
-  const anel = D.alcance[D.alcance.length - 1].anel;
-  const b = anel.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(anel[0], anel[0]));
-  mapa.fitBounds(b, { padding: 40, pitch: 0, bearing: 0, duration: 1600 });
+  alcanceVisivel = !alcanceVisivel;
+  for (const a of D.alcance) for (const id of ["alc-f", "alc-l"]) mapa.setLayoutProperty(id + a.minutos, "visibility", alcanceVisivel ? "visible" : "none");
+  va.querySelector("em").textContent = alcanceVisivel ? "voltar" : "ver";
+  if (alcanceVisivel) {
+    const anel = D.alcance[D.alcance.length - 1].anel;
+    const b = anel.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(anel[0], anel[0]));
+    mapa.fitBounds(b, { padding: 40, pitch: 0, bearing: 0, duration: 1600 });
+  } else {
+    mapa.flyTo({ center: [D.centro.lon, D.centro.lat], zoom: D.zoom || 15.3, pitch: 58, bearing: -18, duration: 1600 });
+  }
 });
 D.pontos.forEach((p, i) => {
   const pop = new maplibregl.Popup({ offset: 18, closeButton: false }).setDOMContent((() => { const d = document.createElement("div"); const b = document.createElement("b"); b.textContent = p.nome; d.appendChild(b); if (p.tempo) { d.appendChild(document.createElement("br")); d.appendChild(document.createTextNode(p.tempo)); } return d; })());

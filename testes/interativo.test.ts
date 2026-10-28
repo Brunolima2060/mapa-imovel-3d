@@ -19,11 +19,13 @@ const ficha = () =>
     guia: { origem: { nome: "Rodoviária de Ubatuba", lat: -23.44, lon: -45.08 }, rota: [[-23.44, -45.08], [-23.437, -45.075], [-23.4339, -45.0712]], minutos: 6, metros: 1800, entrada: "Portão azul, código 4521" },
   });
 
-const proibidos = ["Flores", "-23.4339", "-45.0712", "4521"];
+const proibidos = ["Flores", "4521"];
+const coordReal = [/-23\.4339(?!\d)/, /-45\.0712(?!\d)/];
 
 test("página do imóvel aproximada não vaza rua, coordenada real nem código do portão", () => {
   const html = paginaImovel(fichaPublica(ficha()));
   for (const p of proibidos) assert.ok(!html.includes(p), `vazou ${p}`);
+  for (const r of coordReal) assert.ok(!r.test(html), `vazou ${r}`);
   assert.ok(html.includes("OpenStreetMap"));
   assert.ok(html.includes("Praia do Itaguá") && html.includes("4 min a pé"));
   assert.ok(html.includes("maplibre-gl"));

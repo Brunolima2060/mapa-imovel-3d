@@ -56,7 +56,7 @@ export const fichaPdfHtml = (f: FichaPublica, img: Imagens): string => {
 <div class="grade">
   <div><h2>Ficha técnica</h2>${lista(ficha.map(esc))}</div>
   <div><h2>Acessos logísticos</h2>${lista(acessos.slice(0, 8).map((p) => `<span>${esc(p.nome)}</span><b>${esc([rotuloDistancia(p), rotuloTempo(p)].filter(Boolean).join(" · "))}</b>`))}</div>
-  ${faixas.length ? `<div><h2>Alcance de caminhão</h2>${lista(faixas.map((a) => `<span><b>${a.minutos} min</b> ${esc(a.cidades.slice(0, 5).join(", ") || "—")}</span>`))}</div>` : ""}
+  ${faixas.length ? `<div><h2>Alcance de caminhão</h2>${lista(faixas.filter((a) => a.cidades.length).map((a) => `<span><b>${a.minutos} min</b> ${esc(a.cidades.slice(0, 5).join(", ") || "—")}</span>`))}</div>` : ""}
   ${vizinhos.length ? `<div><h2>Vizinhos logísticos</h2>${lista(vizinhos.map((v) => `<span>${esc(v.nome)}</span><b>${km(v.metros)}</b>`))}</div>` : ""}
 </div>
 ${img.galpao ? `<div class="galpao"><img src="${esc(img.galpao)}"></div>` : ""}

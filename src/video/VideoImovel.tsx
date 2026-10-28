@@ -3,7 +3,7 @@ import { loadFont } from "@remotion/google-fonts/DMSans";
 import type { FichaPublica } from "../ficha.ts";
 import { paraMetros } from "../geo.ts";
 import { ESTILO, FONTE } from "../cena/estilo.ts";
-import { montarRoteiro, pontoNaMaquete, quadroCamera, type Roteiro } from "../cena/camera.ts";
+import { montarRoteiro, pontoNaMaquete, quadroCamera, type Ritmo, type Roteiro } from "../cena/camera.ts";
 import { Cidade3D, projetar, type MarcadorCena } from "../cena/Cidade3D.tsx";
 import { alturaEm, type DadosCidade } from "../cidade.ts";
 import { useDadosCidade } from "./dados.ts";
@@ -13,11 +13,11 @@ import { MapaAlcance, useRegiao } from "./MapaAlcance.tsx";
 
 loadFont("normal", { weights: ["500", "600", "700"], subsets: ["latin", "latin-ext"] });
 
-export type PropsVideo = { ficha: FichaPublica; comPlanta: boolean; fotos: string[] };
+export type PropsVideo = { ficha: FichaPublica; comPlanta: boolean; fotos: string[]; ritmo?: Ritmo };
 
 export const pontosDoVideo = (f: FichaPublica) => f.pontos.filter((p) => p.noVideo);
 export const roteiroDe = (p: PropsVideo, fps: number): Roteiro =>
-  montarRoteiro({ comAlcance: !!p.ficha.logistica?.alcance?.length, nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && (p.ficha.perfil === "galpao" ? !!p.ficha.galpao : !!p.ficha.planta?.comodos.length), nFotos: p.fotos.length, fps });
+  montarRoteiro({ ritmo: p.ritmo, comAlcance: !!p.ficha.logistica?.alcance?.length, nPontos: pontosDoVideo(p.ficha).length, comPlanta: p.comPlanta && (p.ficha.perfil === "galpao" ? !!p.ficha.galpao : !!p.ficha.planta?.comodos.length), nFotos: p.fotos.length, fps });
 
 const Ceu: React.FC = () => <AbsoluteFill style={{ background: `linear-gradient(180deg, ${ESTILO.ceuTopo} 0%, ${ESTILO.ceuBase} 62%)` }} />;
 
@@ -29,11 +29,11 @@ export const VideoImovel: React.FC<PropsVideo> = (props) => {
   return <Video {...props} dados={dados} regiao={regiao} largura={width} altura={height} fps={fps} />;
 };
 
-const Video: React.FC<PropsVideo & { dados: DadosCidade; regiao: ReturnType<typeof useRegiao>; largura: number; altura: number; fps: number }> = ({ ficha, fotos, comPlanta, dados, regiao, largura, altura, fps }) => {
+const Video: React.FC<PropsVideo & { dados: DadosCidade; regiao: ReturnType<typeof useRegiao>; largura: number; altura: number; fps: number }> = ({ ficha, fotos, comPlanta, ritmo, dados, regiao, largura, altura, fps }) => {
   const f = useCurrentFrame();
   const vertical = altura > largura;
   const escala = Math.min(largura, altura) / 1080;
-  const roteiro = roteiroDe({ ficha, fotos, comPlanta }, fps);
+  const roteiro = roteiroDe({ ficha, fotos, comPlanta, ritmo }, fps);
   const pontos = pontosDoVideo(ficha);
   const xz = pontos.map((p) => { const [x, z] = paraMetros(dados.origem, p); return { x, z }; });
   const q = quadroCamera(roteiro, f, xz, vertical);

@@ -18,7 +18,7 @@ const textosGalpao = (f: FichaPublica) => {
   const localizacao = [
     `Acessos logísticos${f.regiao ? ` — ${f.regiao}` : ""}`,
     ...comTempo.map((p) => `• ${p.nome}: ${acesso(p)}`),
-    ...(f.logistica?.alcance?.length ? ["", "Alcance de caminhão", ...f.logistica.alcance.map((a) => `• ${a.minutos} min: ${a.cidades.join(", ") || "—"}`)] : []),
+    ...(f.logistica?.alcance?.length ? ["", "Alcance de caminhão", ...f.logistica.alcance.filter((a) => a.cidades.length).map((a) => `• ${a.minutos} min: ${a.cidades.join(", ") || "—"}`)] : []),
     ...(f.logistica?.vizinhos?.length ? ["", "Vizinhos logísticos", ...f.logistica.vizinhos.map((v) => `• ${v.nome} (${(v.metros / 1000).toFixed(1).replace(".", ",")} km)`)] : []),
     ...(ficha.length ? ["", "Ficha técnica", ...ficha.map((l) => `• ${l}`)] : []),
     "",
