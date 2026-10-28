@@ -19,6 +19,7 @@
     "@react-three/fiber": "9.8.1",
     "@remotion/bundler": "4.0.534",
     "@remotion/cli": "4.0.534",
+    "@remotion/google-fonts": "4.0.534",
     "@remotion/renderer": "4.0.534",
     "@remotion/three": "4.0.534",
     "dijkstrajs": "1.0.3",
@@ -30,11 +31,8 @@
     "three": "0.186.1",
     "zod": "3.25.76"
   },
-  "optionalDependencies": {
-    "msedge-tts": "2.0.3"
-  },
   "devDependencies": {
-    "@types/node": "24.10.1",
+    "@types/node": "26.6.4",
     "@types/react": "19.2.7",
     "@types/three": "0.186.0",
     "typescript": "5.9.3"

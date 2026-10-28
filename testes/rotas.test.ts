@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { minutosDe, rotuloTempo } from "../src/tempo.ts";
+import { minutosDe, rotuloDistancia, rotuloTempo } from "../src/tempo.ts";
 import { melhorTrecho, trechoSuspeito } from "../ferramentas/lib/rotas.ts";
 
 test("rotuloTempo usa a pé até 20 min", () => {
@@ -35,4 +35,11 @@ test("melhorTrecho fica com a menor rota e soma o desvio, sem nunca ficar abaixo
   assert.deepEqual(r, { metros: 330, minutos: 5 });
   const r2 = melhorTrecho({ metros: 945, minutos: 13 }, [{ metros: 100, minutos: 2 }], 30, 270);
   assert.ok(r2!.metros >= 270);
+});
+
+test("rotuloDistancia some quando o ponto está colado no imóvel", () => {
+  assert.equal(rotuloDistancia({ ape: { metros: 0, minutos: 1 } }), null);
+  assert.equal(rotuloDistancia({ ape: { metros: 40, minutos: 1 } }), null);
+  assert.equal(rotuloDistancia({ ape: { metros: 570, minutos: 9 } }), "570 m");
+  assert.equal(rotuloDistancia({ carro: { metros: 2395, minutos: 7 } }), "2,4 km");
 });

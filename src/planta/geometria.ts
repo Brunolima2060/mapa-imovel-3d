@@ -109,7 +109,7 @@ const parede = (x: number, y: number, comp: number, aoLongoX: boolean, h: number
   });
 };
 
-export const montarPlanta = (planta: Planta, { explosao }: { explosao: number }): Face[] => {
+export const montarPlanta = (planta: Planta, { explosao, laje = true }: { explosao: number; laje?: boolean }): Face[] => {
   const e = Math.min(1, Math.max(0, explosao));
   const cs = planta.comodos;
   const minX = Math.min(...cs.map((c) => c.x)), maxX = Math.max(...cs.map((c) => c.x + c.w));
@@ -143,7 +143,7 @@ export const montarPlanta = (planta: Planta, { explosao }: { explosao: number })
     const { dx, dy, dz } = desloc.get(m.comodo)!;
     caixas.push({ x: m.x + dx, y: m.y + dy, z: dz, w: m.w, d: m.d, h: m.h, cor: m.cor, comodo: m.comodo, parte: "movel" });
   }
-  if (e < 0.98) {
+  if (laje && e < 0.98) {
     caixas.push({ x: minX, y: minY, z: ALTURA_PAREDE + e * 3, w: maxX - minX, d: maxY - minY, h: 0.15, cor: "#EEE9E1", parte: "laje", opacidade: 1 - e });
   }
   const faces = caixas.flatMap(facesDaCaixa);

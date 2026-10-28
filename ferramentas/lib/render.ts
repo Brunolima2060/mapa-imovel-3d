@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundle } from "@remotion/bundler";
-import { renderMedia, renderStill, selectComposition } from "@remotion/renderer";
+import { openBrowser, renderMedia, renderStill, selectComposition } from "@remotion/renderer";
 
 const RAIZ = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -30,21 +30,32 @@ const pacote = (publico: string) => {
   return pacotes.get(publico)!;
 };
 
-const opcoesNavegador = () => {
+const navegadorBase = () => {
   const chrome = chromeInstalado();
   return {
     browserExecutable: chrome ?? null,
     ...(chrome ? { chromeMode: "chrome-for-testing" as const } : {}),
     chromiumOptions: { gl: "angle" as const },
-    timeoutInMilliseconds: 180000,
   };
+};
+
+// Um Chrome só por execução (abrir um por quadro esgota a memória de computador comum).
+let navegador: ReturnType<typeof openBrowser> | null = null;
+const opcoesNavegador = async () => {
+  navegador ??= openBrowser("chrome", { ...navegadorBase(), chromiumOptions: navegadorBase().chromiumOptions });
+  return { ...navegadorBase(), puppeteerInstance: await navegador, timeoutInMilliseconds: 240000 };
+};
+
+export const fecharNavegador = async () => {
+  if (navegador) await (await navegador).close({ silent: true });
+  navegador = null;
 };
 
 type Pedido = { publico: string; composicao: string; props: Record<string, unknown>; saida: string; rascunho?: boolean; quadro?: number };
 
 export const renderizarVideo = async ({ publico, composicao, props, saida, rascunho }: Pedido) => {
   const serveUrl = await pacote(publico);
-  const nav = opcoesNavegador();
+  const nav = await opcoesNavegador();
   const comp = await selectComposition({ serveUrl, id: composicao, inputProps: props, ...nav });
   let ultimo = -1;
   await renderMedia({
@@ -71,7 +82,7 @@ export const renderizarVideo = async ({ publico, composicao, props, saida, rascu
 
 export const renderizarImagem = async ({ publico, composicao, props, saida, quadro }: Pedido) => {
   const serveUrl = await pacote(publico);
-  const nav = opcoesNavegador();
+  const nav = await opcoesNavegador();
   const comp = await selectComposition({ serveUrl, id: composicao, inputProps: props, ...nav });
   await renderStill({ serveUrl, composition: comp, inputProps: props, output: saida, imageFormat: "png", frame: quadro ?? 0, ...nav });
   limparTemp();

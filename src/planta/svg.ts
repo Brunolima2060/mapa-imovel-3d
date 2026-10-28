@@ -7,7 +7,7 @@ import { limitesPlanta, montarPlanta, rotuloArea } from "./geometria.ts";
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 export const plantaHtml = (planta: Planta, ficha: Pick<FichaPublica, "nome" | "marca" | "regiao">): string => {
-  const niveis = Array.from({ length: 11 }, (_, i) => montarPlanta(planta, { explosao: (i / 10) * 0.85 }));
+  const niveis = Array.from({ length: 11 }, (_, i) => montarPlanta(planta, { explosao: (i / 10) * 0.85, laje: false }));
   const b = niveis.map(limitesPlanta).reduce((a, x) => ({ x0: Math.min(a.x0, x.x0), y0: Math.min(a.y0, x.y0), x1: Math.max(a.x1, x.x1), y1: Math.max(a.y1, x.y1) }));
   const m = 0.6;
   const vb = `${(b.x0 - m).toFixed(2)} ${(b.y0 - m).toFixed(2)} ${(b.x1 - b.x0 + 2 * m).toFixed(2)} ${(b.y1 - b.y0 + 2 * m).toFixed(2)}`;

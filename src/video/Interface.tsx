@@ -89,11 +89,11 @@ export const Fecho: React.FC<{ ficha: FichaPublica; vis: number; escala: number;
 
 export const Assinatura: React.FC<{ ficha: FichaPublica; escala: number; vertical: boolean }> = ({ ficha, escala: s, vertical }) => (
   <>
-    <div style={{ position: "absolute", left: 0, right: 0, bottom: (vertical ? 70 : 26) * s, textAlign: "center", fontFamily: FONTE, fontSize: 20 * s, color: "rgba(31,39,38,0.55)" }}>
-      © OpenStreetMap · OpenFreeMap{ficha.localizacao === "aproximada" ? " · localização aproximada" : ""}
+    <div style={{ position: "absolute", left: 0, right: 0, bottom: (vertical ? 70 : 26) * s, textAlign: "center", fontFamily: FONTE, fontSize: 20 * s, color: "rgba(31,39,38,0.7)" }}>
+      <span style={{ background: "rgba(250,247,241,0.78)", padding: `${5 * s}px ${16 * s}px`, borderRadius: 999 }}>© OpenStreetMap · OpenFreeMap{ficha.localizacao === "aproximada" ? " · localização aproximada" : ""}</span>
     </div>
     <div style={{ position: "absolute", left: 0, right: 0, top: (vertical ? 130 : 40) * s, textAlign: "center", fontFamily: FONTE, fontSize: 26 * s, letterSpacing: 5 * s, fontWeight: 700, color: ficha.marca.cor, textTransform: "uppercase" }}>
-      {ficha.marca.nome}
+      <span style={{ background: "rgba(250,247,241,0.85)", padding: `${8 * s}px ${22 * s}px`, borderRadius: 999 }}>{ficha.marca.nome}</span>
     </div>
   </>
 );

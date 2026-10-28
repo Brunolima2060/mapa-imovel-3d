@@ -15,12 +15,12 @@ export const DesenhoPlanta: React.FC<{ faces: Face[]; largura: number; altura: n
   return (
     <svg width={largura} height={altura} viewBox={`0 0 ${largura} ${altura}`} style={{ position: "absolute", inset: 0 }}>
       {faces.map((f, i) => (
-        <polygon key={i} points={f.pts.map(pt).join(" ")} fill={f.cor} stroke={contorno} strokeWidth={Math.max(0.6, k * 0.012)} strokeLinejoin="round" opacity={f.opacidade ?? 1} />
+        <polygon key={i} points={f.pts.map(pt).join(" ")} fill={f.cor} stroke={f.tom === "topo" || f.tom === "chao" ? contorno : f.cor} strokeWidth={f.tom === "topo" || f.tom === "chao" ? Math.max(0.6, k * 0.012) : 0.8} strokeLinejoin="round" opacity={f.opacidade ?? 1} />
       ))}
       {rotulos > 0 &&
         piso.map((f, i) => {
           const x = f.rotulo!.x * k + ox, y = f.rotulo!.y * k + oy;
-          const s = Math.max(14, k * 0.2) * escalaTexto;
+          const s = Math.max(22, k * 0.34) * escalaTexto;
           return (
             <g key={"r" + i} opacity={rotulos} transform={`translate(${x} ${y - (1 - rotulos) * 10})`}>
               <text textAnchor="middle" y={-s * 0.15} fontFamily={FONTE} fontWeight={700} fontSize={s} fill={ESTILO.texto} stroke="#FFFDF8" strokeWidth={s * 0.22} paintOrder="stroke">{f.rotulo!.texto}</text>
@@ -49,7 +49,7 @@ export const PlantaAnimada: React.FC<{ planta: Planta; cor: string; largura: num
         </div>
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: (vertical ? 420 : 200) * s, bottom: (vertical ? 380 : 60) * s }}>
-        <DesenhoPlanta faces={faces} largura={largura} altura={altura - (vertical ? 800 : 260) * s} rotulos={rot} escalaTexto={vertical ? 1 : 0.9} />
+        <DesenhoPlanta faces={faces} largura={largura} altura={altura - (vertical ? 800 : 260) * s} margem={0.03} rotulos={rot} escalaTexto={vertical ? 1 : 0.9} />
       </div>
     </div>
   );

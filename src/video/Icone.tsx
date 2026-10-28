@@ -25,8 +25,4 @@ export const Icone: React.FC<{ tipo: TipoPonto; tamanho: number; cor: string; es
   </svg>
 );
 
-export const NOME_TIPO: Record<TipoPonto, string> = {
-  praia: "Praia", metro: "Metrô", trem: "Trem", onibus: "Ônibus", rodoviaria: "Rodoviária", aeroporto: "Aeroporto",
-  mercado: "Mercado", padaria: "Padaria", farmacia: "Farmácia", hospital: "Hospital", restaurante: "Restaurante",
-  parque: "Parque", shopping: "Shopping", atracao: "Passeio", outro: "Ponto",
-};
+export { NOME_TIPO } from "../nomes.ts";

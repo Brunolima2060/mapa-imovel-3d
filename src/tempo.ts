@@ -13,6 +13,6 @@ export const rotuloTempo = (p: { ape?: Trecho; carro?: Trecho }): string | null 
 
 export const rotuloDistancia = (p: { ape?: Trecho; carro?: Trecho }): string | null => {
   const m = p.ape?.metros ?? p.carro?.metros;
-  if (m === undefined) return null;
+  if (m === undefined || m < 50) return null; // colado no imóvel: só o tempo
   return m < 1000 ? `${Math.round(m / 10) * 10} m` : `${(m / 1000).toFixed(1).replace(".", ",")} km`;
 };

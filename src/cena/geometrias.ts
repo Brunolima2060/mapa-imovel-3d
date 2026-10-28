@@ -150,8 +150,12 @@ export const geometriaPredios = (d: DadosCidade): BufferGeometry => {
 export const pontosArco = (de: [number, number, number], ate: [number, number, number], n = 64): [number, number, number][] => {
   const d = Math.hypot(ate[0] - de[0], ate[2] - de[2]);
   const pico = Math.max(40, d * 0.22);
+  // barriga para o lado: o arco continua parecendo arco mesmo visto de frente
+  const lado = d * 0.18;
+  const nx = d ? -(ate[2] - de[2]) / d : 0, nz = d ? (ate[0] - de[0]) / d : 0;
   return Array.from({ length: n + 1 }, (_, i) => {
     const t = i / n;
-    return [de[0] + (ate[0] - de[0]) * t, de[1] + (ate[1] - de[1]) * t + Math.sin(Math.PI * t) * pico, de[2] + (ate[2] - de[2]) * t] as [number, number, number];
+    const b = Math.sin(Math.PI * t);
+    return [de[0] + (ate[0] - de[0]) * t + nx * lado * b, de[1] + (ate[1] - de[1]) * t + b * pico, de[2] + (ate[2] - de[2]) * t + nz * lado * b] as [number, number, number];
   });
 };

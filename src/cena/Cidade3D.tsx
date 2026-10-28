@@ -76,15 +76,15 @@ const materialColuna = (cor: string) =>
     side: DoubleSide,
     uniforms: { cor: { value: new Color(cor) }, forca: { value: 1 } },
     vertexShader: "varying float vy; void main(){ vy = uv.y; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }",
-    fragmentShader: "uniform vec3 cor; uniform float forca; varying float vy; void main(){ gl_FragColor = vec4(cor, (1.0 - vy) * 0.42 * forca); }",
+    fragmentShader: "uniform vec3 cor; uniform float forca; varying float vy; void main(){ gl_FragColor = vec4(cor, (1.0 - vy) * 0.3 * forca); }",
   });
 
 const DestaqueImovel: React.FC<{ dados: DadosCidade; cor: string; aproximada: boolean; raio: number; pulso: number }> = ({ dados, cor, aproximada, raio, pulso }) => {
   const y0 = Math.max(0, alturaTerreno(dados, 0, 0));
   const r = aproximada ? raio : 18;
-  const alto = aproximada ? 90 : 140;
+  const alto = aproximada ? 90 : 70;
   const coluna = useMemo(() => new CylinderGeometry(r, r, alto, 96, 1, true), [r, alto]);
-  const anel = useMemo(() => new RingGeometry(r * 0.97, r * 1.03 + 2, 128), [r]);
+  const anel = useMemo(() => new RingGeometry(r - 3.5, r + 3.5, 160), [r]);
   const mat = useMemo(() => materialColuna(cor), [cor]);
   const s = 1 + Math.sin(pulso * Math.PI * 2) * 0.015;
   return (
@@ -99,7 +99,7 @@ const DestaqueImovel: React.FC<{ dados: DadosCidade; cor: string; aproximada: bo
           <meshBasicMaterial color={cor} transparent opacity={0.16} depthWrite={false} />
         </mesh>
       ) : (
-        <mesh position={[0, alto + 10, 0]}>
+        <mesh position={[0, alto + 8, 0]}>
           <sphereGeometry args={[11, 32, 16]} />
           <meshStandardMaterial color={cor} roughness={0.6} />
         </mesh>
@@ -144,7 +144,25 @@ const Marcador: React.FC<{ dados: DadosCidade; m: MarcadorCena; cor: string }> =
   );
 };
 
-export const Cidade3D: React.FC<Props> = ({ dados, largura, altura, quadro, cor, aproximada, raioAproxM, marcadores, pulso }) => {
+// Caminho do guia de chegada: linha na cor da marca colada no chão, com uma bolinha andando.
+const Rota: React.FC<{ dados: DadosCidade; pts: [number, number][]; progresso: number; cor: string }> = ({ dados, pts, progresso, cor }) => {
+  const curva = useMemo(() => new CatmullRomCurve3(pts.map(([x, z]) => new Vector3(x, Math.max(0, alturaTerreno(dados, x, z)) + 4, z)), false, "centripetal"), [dados, pts]);
+  const tubo = useMemo(() => new TubeGeometry(curva, Math.max(64, pts.length * 4), 4.5, 8, false), [curva, pts.length]);
+  const p = curva.getPointAt(Math.min(1, Math.max(0, progresso)));
+  return (
+    <group>
+      <mesh geometry={tubo}>
+        <meshBasicMaterial color={cor} />
+      </mesh>
+      <mesh position={[p.x, p.y + 8, p.z]}>
+        <sphereGeometry args={[11, 24, 12]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.5} />
+      </mesh>
+    </group>
+  );
+};
+
+export const Cidade3D: React.FC<Props & { rota?: { pts: [number, number][]; progresso: number } }> = ({ dados, largura, altura, quadro, cor, aproximada, raioAproxM, marcadores, pulso, rota }) => {
   const terreno = useMemo(() => geometriaTerreno(dados), [dados]);
   const textura = useMemo(() => texturaMapa(dados), [dados]);
   const saia = useMemo(() => geometriaSaia(dados), [dados]);
@@ -173,6 +191,7 @@ export const Cidade3D: React.FC<Props> = ({ dados, largura, altura, quadro, cor,
         <meshStandardMaterial vertexColors roughness={0.88} side={DoubleSide} />
       </mesh>
       <DestaqueImovel dados={dados} cor={cor} aproximada={aproximada} raio={raioAproxM} pulso={pulso} />
+      {rota && rota.pts.length > 1 && <Rota dados={dados} pts={rota.pts} progresso={rota.progresso} cor={cor} />}
       {marcadores.map((m) => (
         <Marcador key={m.id} dados={dados} m={m} cor={cor} />
       ))}

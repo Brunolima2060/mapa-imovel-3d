@@ -63,3 +63,8 @@ test("explosão afasta os cômodos do centro", () => {
   const cx = (fs: typeof f0) => fs[0].pts.reduce((a, p) => a + p[0], 0) / fs[0].pts.length;
   assert.notEqual(cx(f0).toFixed(3), cx(f1).toFixed(3));
 });
+
+test("laje pode ser desligada (imagem estática)", () => {
+  assert.ok(montarPlanta(ape, { explosao: 0.35 }).some((f) => f.parte === "laje"));
+  assert.ok(!montarPlanta(ape, { explosao: 0.35, laje: false }).some((f) => f.parte === "laje"));
+});
